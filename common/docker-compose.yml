@@ -1,0 +1,4 @@
+services:
+    APPNAME-common-job:
+        build: .
+        restart: no

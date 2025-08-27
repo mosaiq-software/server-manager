@@ -1,0 +1,30 @@
+{
+    "name": "@mosaiq/APPNAME-common",
+    "version": "1.0.0",
+    "description": "",
+    "main": "src/index.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc && tsc-alias",
+        "build:watch": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")",
+        "lint": "eslint .",
+        "types": "tsc --noemit",
+        "prepublish-cleanup": "node ./scripts/pre-publish.mjs",
+        "publish:prod": "npm ci && npm run build && npm run prepublish-cleanup && npm publish ./dist"
+    },
+    "publishConfig": {
+        "registry": "https://registry.mosaiq.dev"
+    },
+    "dependencies": {
+    },
+    "devDependencies": {
+        "tsx": "^4.19.2",
+        "typescript": "^5.6.3",
+        "@eslint/js": "^9.21.0",
+        "@types/node": "^22.10.2",
+        "eslint": "^9.21.0",
+        "globals": "^16.0.0",
+        "tsc-alias": "^1.8.16",
+        "typescript-eslint": "^8.24.1"
+    }
+}

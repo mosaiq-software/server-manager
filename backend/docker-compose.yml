@@ -1,0 +1,10 @@
+services:
+    APPNAME-api:
+        build: .
+        ports:
+            - 'HOST_PORT:CONTAINER_PORT'
+        restart: always
+        volumes:
+            - type: bind
+              source: /media/drive3/persistence/APPNAME/
+              target: /etc/APPNAME/

@@ -1,0 +1,8 @@
+services:
+    APPNAME-ui-job:
+        build: .
+        restart: no
+        volumes:
+            - type: bind
+              source: /media/drive3/www/APPNAME
+              target: /www
