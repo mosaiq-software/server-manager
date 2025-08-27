@@ -1,5 +1,5 @@
 {
-    "name": "@mosaiq/APPNAME-frontend",
+    "name": "@mosaiq/nsm-frontend",
     "version": "1.0.0",
     "main": "src/index.tsx",
     "scripts": {
@@ -9,9 +9,9 @@
         "build": "webpack --mode production",
         "lint": "eslint .",
         "types": "tsc --noemit",
-        "common:prod": "npm un @mosaiq/APPNAME-common && npm i @mosaiq/APPNAME-common@latest",
-        "common:dev": "npm un @mosaiq/APPNAME-common && npm i ../common/dist",
-        "build:prod": "npm ci && npm i @mosaiq/APPNAME-common@latest && npm run build && rm -rf /www/* && cp -r ./public /www"
+        "common:prod": "npm un @mosaiq/nsm-common && npm i @mosaiq/nsm-common@latest",
+        "common:dev": "npm un @mosaiq/nsm-common && npm i ../common/dist",
+        "build:prod": "npm ci && npm i @mosaiq/nsm-common@latest && npm run build && rm -rf /www/* && cp -r ./public /www"
     },
     "dependencies": {
         "@mantine/core": "^8.2.1",

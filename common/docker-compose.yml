@@ -1,4 +1,4 @@
 services:
-    APPNAME-common-job:
+    nsm-common-job:
         build: .
         restart: no

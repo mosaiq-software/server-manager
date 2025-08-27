@@ -1,10 +1,10 @@
 services:
-    APPNAME-api:
+    nsm-api:
         build: .
         ports:
             - 'HOST_PORT:CONTAINER_PORT'
         restart: always
         volumes:
             - type: bind
-              source: /media/drive3/persistence/APPNAME/
-              target: /etc/APPNAME/
+              source: /media/drive3/persistence/nsm/
+              target: /etc/nsm/

@@ -1,5 +1,5 @@
 {
-    "name": "@mosaiq/APPNAME-backend",
+    "name": "@mosaiq/nsm-backend",
     "version": "1.0.0",
     "description": "",
     "main": "src/index.ts",
@@ -9,8 +9,8 @@
         "start:prod": "npm run common:prod && npm run start",
         "lint": "eslint .",
         "types": "tsc --noemit",
-        "common:prod": "npm un @mosaiq/APPNAME-common && npm i @mosaiq/APPNAME-common@latest",
-        "common:dev": "npm un @mosaiq/APPNAME-common && npm i ../common/dist"
+        "common:prod": "npm un @mosaiq/nsm-common && npm i @mosaiq/nsm-common@latest",
+        "common:dev": "npm un @mosaiq/nsm-common && npm i ../common/dist"
     },
     "author": "",
     "dependencies": {

@@ -1,8 +1,8 @@
 services:
-    APPNAME-ui-job:
+    nsm-ui-job:
         build: .
         restart: no
         volumes:
             - type: bind
-              source: /media/drive3/www/APPNAME
+              source: /media/drive3/www/nsm
               target: /www
