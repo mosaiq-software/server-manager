@@ -1,5 +1,5 @@
-import LandingPage from '@/pages/LandingPage';
-import ProfilePage from '@/pages/ProfilePage';
+import DashboardPage from '@/pages/DashboardPage';
+import ProjectPage from '@/pages/ProjectPage';
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 
@@ -8,11 +8,11 @@ const Router = () => {
         <Routes>
             <Route
                 path="/"
-                element={<LandingPage />}
+                element={<DashboardPage />}
             />
             <Route
-                path="/u/:userId"
-                element={<ProfilePage />}
+                path="/p/:projectId"
+                element={<ProjectPage />}
             />
             <Route
                 path="/*"

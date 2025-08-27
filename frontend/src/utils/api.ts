@@ -1,4 +1,4 @@
-import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from 'common';
+import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 export async function apiGet<T extends API_ROUTES>(route: T, params: API_PARAMS[T], authToken?: string): Promise<API_RETURN[T] | undefined> {
     try {
         const loadedURL = loadParams(route, params);

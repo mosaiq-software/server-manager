@@ -1,4 +1,4 @@
-import { User } from 'common';
+import { User } from '@mosaiq/nsm-common';
 import React, { createContext, useContext, useState } from 'react';
 
 type UserContextType = {
