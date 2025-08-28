@@ -1,21 +1,28 @@
-import { getProjectByIdModel } from '@/persistence/projectPersistence';
+import { getProjectByIdModel, updateProjectModel } from '@/persistence/projectPersistence';
 import { executeCommandOnHost } from '@/utils/hostExecutor';
+import { DeploymentState } from '@mosaiq/nsm-common/types';
 import { execSync } from 'child_process';
 
-export const deployProject = async (projectId: string): Promise<void> => {
+export const deployProject = async (projectId: string): Promise<boolean> => {
     try {
         const project = await getProjectByIdModel(projectId);
         if (!project) throw new Error('Project not found');
 
         if (process.env.PRODUCTION !== 'true') {
             console.log('Not in production mode, skipping deployment');
-            return;
+            return false;
         }
+
+        await updateProjectModel(projectId, {state: DeploymentState.DEPLOYING});
 
         cloneRepository(projectId, project.repoOwner, project.repoName);
         runDeploymentCommand(projectId, project.runCommand);
+        await updateProjectModel(projectId, {state: DeploymentState.ACTIVE});
+        return true;
     } catch (error) {
         console.error('Error deploying project:', error);
+        await updateProjectModel(projectId, {state: DeploymentState.FAILED});
+        return false;
     }
 };
 
@@ -111,7 +118,7 @@ const runDeploymentCommand = (projectId: string, runCommand: string) => {
     const deploymentCommand = `(cd ${process.env.WEBAPPS_PATH}/${projectId} && ${runCommand})`;
     try {
         const deploymentStdout = executeCommandOnHost(deploymentCommand);
-        console.log('Deployment output:', deploymentStdout);
+        return deploymentStdout;
     } catch (e) {
         console.error('Error running deployment command:', deploymentCommand, e);
     }

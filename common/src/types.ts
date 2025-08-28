@@ -23,6 +23,13 @@ export interface Secret {
     secretPlaceholder: string;
 }
 
+export interface DeploymentLog {
+    id: string;
+    projectId: string;
+    status: DeploymentState;
+    log: string;
+}
+
 export enum DeploymentState {
     READY = 'ready',
     DEPLOYING = 'deploying',

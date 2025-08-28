@@ -35,12 +35,12 @@ export const createSecretModel = async (sec: Secret) => {
     return await SecretModel.create({ ...sec });
 };
 
-export const updateSecretModel = async (id: string, data: Partial<Secret>) => {
+export const updateSecretModel = async (projectId: string, env: string, secretName: string, newValue: string) => {
     return await SecretModel.update(
         {
-            ...data,
+            secretValue: newValue,
         },
-        { where: { projectId: id } }
+        { where: { projectId, env, secretName } }
     );
 };
 

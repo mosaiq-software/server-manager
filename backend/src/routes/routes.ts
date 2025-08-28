@@ -3,6 +3,9 @@ import { deployProject } from '@/controllers/deployController';
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { verify } from 'crypto';
 import express from 'express';
+import { DeploymentState } from '@mosaiq/nsm-common/types';
+import { getDeploymentLogByIdModel } from '@/persistence/deploymentLogPersistence';
+import { updateEnvironmentVariable } from '@/controllers/secretController';
 
 const router = express.Router();
 
@@ -30,8 +33,8 @@ router.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
             res.status(403).send('Forbidden');
             return;
         }
-        await deployProject(params.projectId);
-        const response: API_RETURN[API_ROUTES.GET_DEPLOY] = undefined;
+        const success = await deployProject(params.projectId);
+        const response: API_RETURN[API_ROUTES.GET_DEPLOY] = success ? DeploymentState.ACTIVE : DeploymentState.FAILED;
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting user', e);
@@ -66,6 +69,26 @@ router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting projects', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.get(API_ROUTES.GET_DEPLOY_LOG, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.GET_DEPLOY_LOG];
+    try {
+        if (!params.deployLogId) {
+            res.status(400).send('No deployLogId');
+            return;
+        }
+        const deployLog = await getDeploymentLogByIdModel(params.deployLogId);
+        if (!deployLog) {
+            res.status(404).send('Deploy log not found');
+            return;
+        }
+        const response: API_RETURN[API_ROUTES.GET_DEPLOY_LOG] = deployLog;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error getting deploy log', e);
         res.status(500).send('Internal server error');
     }
 });
@@ -115,6 +138,22 @@ router.post(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error resetting deployment key', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.post(API_ROUTES.POST_UPDATE_ENV_VAR, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_UPDATE_ENV_VAR];
+    const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_ENV_VAR];
+    try {
+        if (!params.projectId || !params.envName || !params.var) {
+            res.status(400).send('Invalid request');
+            return;
+        }
+        await updateEnvironmentVariable(params.projectId, params.envName, params.var, body.value);
+        res.status(200).send('Environment variable updated');
+    } catch (e: any) {
+        console.error('Error updating environment variable', e);
         res.status(500).send('Internal server error');
     }
 });

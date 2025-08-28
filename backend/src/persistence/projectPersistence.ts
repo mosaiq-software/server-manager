@@ -18,7 +18,6 @@ ProjectModel.init(
             type: DataTypes.STRING,
             primaryKey: true,
         },
-        name: DataTypes.STRING,
         state: DataTypes.STRING,
         repoOwner: DataTypes.STRING,
         repoName: DataTypes.STRING,

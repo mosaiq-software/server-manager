@@ -1,10 +1,8 @@
+import { useProjects } from '@/contexts/project-context';
 import { Button, Card, Center, Container, Group, Loader, Modal, Stack, TextInput, Title, Text } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { apiGet, apiPost } from '@/utils/api';
 
 const DashboardPage = () => {
     const navigate = useNavigate();
@@ -15,44 +13,7 @@ const DashboardPage = () => {
         repoName: '',
         runCommand: 'npm run deploy',
     });
-    const [projects, setProjects] = useState<Partial<Project>[]>([]);
-
-    useEffect(() => {
-        const fetchProjects = async () => {
-            try {
-                const response = await apiGet(API_ROUTES.GET_PROJECTS, {}, 'AUTH TOKEN...');
-                if (!response) {
-                    return;
-                }
-                setProjects(response);
-            } catch (error) {
-                notifications.show({
-                    title: 'Error',
-                    message: 'Failed to fetch projects',
-                    color: 'red',
-                });
-            }
-        };
-        fetchProjects();
-    }, []);
-
-    const handleCreateProject = async () => {
-        try {
-            await apiPost(API_ROUTES.POST_CREATE_PROJECT, {}, newProject, 'AUTH TOKEN...');
-            notifications.show({
-                title: 'Success',
-                message: 'Project created successfully',
-                color: 'green',
-            });
-            setModal(null);
-        } catch (error) {
-            notifications.show({
-                title: 'Error',
-                message: 'Failed to create project',
-                color: 'red',
-            });
-        }
-    };
+    const projectCtx = useProjects();
 
     let ModalComponent: JSX.Element | null = null;
 
@@ -85,7 +46,7 @@ const DashboardPage = () => {
                         value={newProject?.repoName || ''}
                         onChange={(e) => setNewProject({ ...newProject, repoName: e.target.value })}
                     />
-                    {newProject.repoOwner && newProject.repoName && <Link to={`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}>{`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}</Link>}
+                    {newProject.repoOwner && newProject.repoName && <Link to={`https://github.com/${newProject.repoOwner}/${newProject.repoName}`} target='_blank'>{`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}</Link>}
                     <TextInput
                         label="Deployment Command"
                         placeholder="npm run deploy"
@@ -102,7 +63,11 @@ const DashboardPage = () => {
                         </Button>
                         <Button
                             variant="filled"
-                            onClick={handleCreateProject}
+                            onClick={async ()=>{
+                                await projectCtx.create(newProject);
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                navigate(`/p/${newProject.id}`);
+                            }}
                         >
                             Create
                         </Button>
@@ -118,18 +83,7 @@ const DashboardPage = () => {
             <Title>NSM</Title>
             <Button onClick={() => setModal('create')}>Create Project</Button>
             <Stack>
-                {projects.map((project) => (
-                    <Card
-                        key={project.id}
-                        onClick={() => {
-                            navigate(`/p/${project.id}`);
-                        }}
-                    >
-                        <Title order={4}>{project.id}</Title>
-                        <Text>{`https://github.com/${project.repoOwner}/${project.repoName}`}</Text>
-                        <Text>{project.state}</Text>
-                    </Card>
-                ))}
+
             </Stack>
         </Container>
     );

@@ -1,11 +1,13 @@
 import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModel } from '@/persistence/projectPersistence';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import { getReposEnvFiles } from './deployController';
-import { applyDotenv } from './secretController';
+import { applyDotenv, getAllSecretEnvsForProject } from './secretController';
 
 export const getProject = async (projectId: string) => {
     const projectData = await getProjectByIdModel(projectId);
     if (!projectData) return undefined;
+
+    const allSecretEnvs = await getAllSecretEnvsForProject(projectId);
 
     const project: Project = {
         id: projectData.id,
@@ -16,6 +18,7 @@ export const getProject = async (projectId: string) => {
         state: projectData.state,
         createdAt: projectData.createdAt,
         updatedAt: projectData.updatedAt,
+        envs: allSecretEnvs,
     };
 
     return project;
@@ -23,12 +26,11 @@ export const getProject = async (projectId: string) => {
 
 export const getAllProjects = async (): Promise<Project[]> => {
     const projectsData = await getAllProjectsModel();
-    return projectsData.map((projectData) => ({
-        id: projectData.id,
-        repoOwner: projectData.repoOwner,
-        repoName: projectData.repoName,
-        runCommand: projectData.runCommand,
-    }));
+    const projects = [];
+    for (const projectData of projectsData) {
+        projects.push(await getProject(projectData.id) as Project);
+    }
+    return projects;
 };
 
 export const createProject = async (project: Project) => {

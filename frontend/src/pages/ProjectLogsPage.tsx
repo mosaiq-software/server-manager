@@ -9,7 +9,7 @@ import {EditableTextInput} from "@/components/EditableTextInput";
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
 
-const ProjectPage = () => {
+const ProjectLogsPage = () => {
     const params = useParams();
     const projectId = params.projectId;
     const navigate = useNavigate();
@@ -41,9 +41,9 @@ const ProjectPage = () => {
 
     return (
         <Stack>
-            <ProjectHeader project={project} section='Overview'/>
+            <ProjectHeader project={project} section='Logs'/>
         </Stack>
     );
 };
 
-export default ProjectPage;
+export default ProjectLogsPage;

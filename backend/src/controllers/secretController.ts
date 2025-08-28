@@ -1,4 +1,4 @@
-import { createSecretModel, deleteAllSecretsForProjectEnvModel, getAllSecretsForProjectModel } from '@/persistence/secretPersistence';
+import { createSecretModel, deleteAllSecretsForProjectEnvModel, getAllSecretsForProjectModel, updateSecretModel } from '@/persistence/secretPersistence';
 import { DotenvData, Secret } from '@mosaiq/nsm-common/types';
 import { parseSampleDotenv } from '@mosaiq/nsm-common/secretUtil';
 
@@ -49,4 +49,8 @@ export const applyDotenv = async (dotenv: string, projectId: string, env: string
     for (const sec of updatedSecrets) {
         createSecretModel(sec);
     }
+};
+
+export const updateEnvironmentVariable = async (projectId: string, envName: string, varName: string, newValue: string) => {
+    await updateSecretModel(projectId, envName, varName, newValue);
 };

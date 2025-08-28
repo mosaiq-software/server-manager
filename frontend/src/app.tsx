@@ -1,4 +1,5 @@
 import { UserProvider } from '@/contexts/user-context';
+import { ProjectProvider } from "@/contexts/project-context";
 import { createTheme, MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/dropzone/styles.css';
@@ -19,7 +20,9 @@ const App = () => {
             <BrowserRouter>
                 <Notifications />
                 <UserProvider>
-                    <Router />
+                    <ProjectProvider>
+                        <Router />
+                    </ProjectProvider>
                 </UserProvider>
             </BrowserRouter>
         </MantineProvider>
