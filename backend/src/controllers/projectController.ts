@@ -9,6 +9,11 @@ export const deployProject = async (projectId: string): Promise<void> => {
         const project = await getProjectByIdModel(projectId);
         if (!project) throw new Error('Project not found');
 
+        if(process.env.PRODUCTION !== 'true') {
+            console.log('Not in production mode, skipping GitHub fingerprint application');
+            return;
+        }
+
         // Get the repository loaded into the working directory
         const webappsDir = process.env.WEBAPPS_PATH;
         try {
