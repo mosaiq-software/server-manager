@@ -1,4 +1,5 @@
 import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModel } from '@/persistence/projectPersistence';
+import { executeCommandOnHost } from '@/utils/hostExecutor';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import { execSync } from 'child_process';
 
@@ -10,19 +11,45 @@ export const deployProject = async (projectId: string): Promise<void> => {
 
         // Get the repository loaded into the working directory
         const webappsDir = process.env.WEBAPPS_PATH;
-        execSync(`cd ${webappsDir}`);
-        const dirExists = execSync(`test -d ./${projectId} && echo true`).toString().trim();
-        console.log('Directory exists:', dirExists);
-        if(dirExists === 'true') {
-            execSync(`rm -rf ${webappsDir}/${projectId}`);
+        try {
+            execSync(`cd ${webappsDir}`);
+        } catch (error) {
+            console.error('Error changing directory:', error);
+            return;
         }
-        execSync(`git clone ${project.repositoryUrl} ${webappsDir}/${projectId}`);
-        execSync(`cd ${webappsDir}/${projectId}`);
+        let dirExists = false;
+        try {
+            const stdout = execSync(`test -d ./${projectId} && echo true`).toString().trim();
+            dirExists = stdout === "true";
+        } catch (e) {
+            dirExists = false;
+        }
+        if(!dirExists) {
+            try{
+                execSync(`rm -rf ${webappsDir}/${projectId}`);
+            } catch (e) {
+                console.error('Error removing directory:', e);
+                return;
+            }
+        }
+
+        try {
+            execSync(`git clone -c core.sshCommand="/usr/bin/ssh -i /webapps/.ssh/id_ed25519" ${project.repositoryUrl} ${webappsDir}/${projectId}`);
+        } catch (e) {
+            console.error('Error cloning repository:', e);
+            return;
+        }
 
         // Run the deployment command
-        const deploymentStdout = execSync(project.runCommand).toString().trim();
-        console.log('Deployment output:', deploymentStdout);
+        const deploymentCommand = `cd ${webappsDir}/${projectId} && ${project.runCommand}`;
+        try{
+            const deploymentStdout = executeCommandOnHost(deploymentCommand);
+            console.log('Deployment output:', deploymentStdout);
 
+        } catch (e) {
+            console.error('Error running deployment command:',deploymentCommand, e);
+            return;
+        }
     } catch (error) {
         console.error('Error deploying project:', error);
     }
