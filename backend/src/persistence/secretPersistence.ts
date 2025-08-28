@@ -28,7 +28,7 @@ SecretModel.init(
 );
 
 export const getAllSecretsForProjectModel = async (projectId: string): Promise<Secret[]> => {
-    return (await SecretModel.findAll({ where: { projectId } }))?.map(sec => sec.toJSON()) as Secret[];
+    return (await SecretModel.findAll({ where: { projectId } }))?.map((sec) => sec.toJSON()) as Secret[];
 };
 
 export const createSecretModel = async (sec: Secret) => {
@@ -44,6 +44,6 @@ export const updateSecretModel = async (id: string, data: Partial<Secret>) => {
     );
 };
 
-export const deleteAllSecretsForProjectEnvModel = async (projectId: string, env:string) => {
+export const deleteAllSecretsForProjectEnvModel = async (projectId: string, env: string) => {
     return await SecretModel.destroy({ where: { projectId, env } });
 };

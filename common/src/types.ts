@@ -23,10 +23,9 @@ export interface Secret {
     secretPlaceholder: string;
 }
 
-
 export enum DeploymentState {
     READY = 'ready',
     DEPLOYING = 'deploying',
     FAILED = 'failed',
-    ACTIVE = 'active'
+    ACTIVE = 'active',
 }

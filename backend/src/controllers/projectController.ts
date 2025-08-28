@@ -3,7 +3,6 @@ import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import { getReposEnvFiles } from './deployController';
 import { applyDotenv } from './secretController';
 
-
 export const getProject = async (projectId: string) => {
     const projectData = await getProjectByIdModel(projectId);
     if (!projectData) return undefined;
@@ -16,15 +15,15 @@ export const getProject = async (projectId: string) => {
         deploymentKey: projectData.deploymentKey,
         state: projectData.state,
         createdAt: projectData.createdAt,
-        updatedAt: projectData.updatedAt
-    }
+        updatedAt: projectData.updatedAt,
+    };
 
     return project;
 };
 
 export const getAllProjects = async (): Promise<Project[]> => {
     const projectsData = await getAllProjectsModel();
-    return projectsData.map(projectData => ({
+    return projectsData.map((projectData) => ({
         id: projectData.id,
         repoOwner: projectData.repoOwner,
         repoName: projectData.repoName,
@@ -48,14 +47,13 @@ export const createProject = async (project: Project) => {
         for (const envFile of envFiles) {
             applyDotenv(envFile.contents, project.id, envFile.env);
         }
-
     } catch (error) {
         console.error('Error creating project:', error);
         return null;
     }
 };
 
-export const updateProject = async (id:string, updates: Partial<Project>) => {
+export const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
         await updateProjectModel(id, updates);
     } catch (error) {
@@ -80,5 +78,5 @@ export const resetDeploymentKey = async (projectId: string): Promise<string | nu
 };
 
 const generateDeploymentKey = (): string => {
-    return crypto.randomUUID().replace(/-/g, "");
+    return crypto.randomUUID().replace(/-/g, '');
 };

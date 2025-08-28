@@ -1,7 +1,7 @@
-import { Secret } from "./types";
+import { Secret } from './types';
 
-export const assembleDotenv = (envName:string, secrets: Secret[]): string => {
-    return secrets.map(sec => `${sec.secretName}=${sec.secretValue}`).join('\n');
+export const assembleDotenv = (envName: string, secrets: Secret[]): string => {
+    return secrets.map((sec) => `${sec.secretName}=${sec.secretValue}`).join('\n');
 };
 
 export const parseSampleDotenv = (dotenv: string, projectId: string, env: string): Secret[] => {
@@ -16,7 +16,7 @@ export const parseSampleDotenv = (dotenv: string, projectId: string, env: string
                 env: env,
                 secretName: key.trim(),
                 secretValue: '',
-                secretPlaceholder: value?.trim() ?? ''
+                secretPlaceholder: value?.trim() ?? '',
             });
         }
     }

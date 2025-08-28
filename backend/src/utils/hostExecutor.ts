@@ -1,4 +1,4 @@
-import {exec, execSync} from "child_process";
+import { exec, execSync } from 'child_process';
 
 export const executeCommandOnHost = (command: string): string | undefined => {
     const pipePath = process.env.NSM_PIPE_PATH;

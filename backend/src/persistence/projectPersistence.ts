@@ -33,7 +33,7 @@ export const getProjectByIdModel = async (id: string) => {
 };
 
 export const getAllProjectsModel = async (): Promise<ProjectModelType[]> => {
-    return (await ProjectModel.findAll())?.map(project => project.toJSON()) as ProjectModelType[];
+    return (await ProjectModel.findAll())?.map((project) => project.toJSON()) as ProjectModelType[];
 };
 
 export const createProjectModel = async (id: string, data: Partial<ProjectModelType>) => {

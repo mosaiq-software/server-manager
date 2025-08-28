@@ -22,11 +22,11 @@ router.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
             res.status(400).send('No projectId');
             return;
         }
-        if(!params.key) {
+        if (!params.key) {
             res.status(401).send('Unauthorized');
             return;
         }
-        if(!await verifyDeploymentKey(params.projectId, params.key)) {
+        if (!(await verifyDeploymentKey(params.projectId, params.key))) {
             res.status(403).send('Forbidden');
             return;
         }
@@ -42,7 +42,7 @@ router.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
 router.get(API_ROUTES.GET_PROJECT, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.GET_PROJECT];
     try {
-        if(!params.projectId) {
+        if (!params.projectId) {
             res.status(400).send('No projectId');
             return;
         }
@@ -73,7 +73,7 @@ router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
 router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_PROJECT];
     try {
-        if(!body || !body.id || !body.repoOwner || !body.repoName || !body.runCommand) {
+        if (!body || !body.id || !body.repoOwner || !body.repoName || !body.runCommand) {
             res.status(400).send('Invalid request body');
             return;
         }
@@ -84,7 +84,7 @@ router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
         console.error('Error resetting deployment key', e);
         res.status(500).send('Internal server error');
     }
-}); 
+});
 
 router.post(API_ROUTES.POST_UPDATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_PROJECT];
@@ -117,6 +117,6 @@ router.post(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, async (req, res) => {
         console.error('Error resetting deployment key', e);
         res.status(500).send('Internal server error');
     }
-}); 
+});
 
 export default router;

@@ -4,7 +4,7 @@ import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { Project } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {apiGet} from '@/utils/api';
+import { apiGet } from '@/utils/api';
 const ProjectPage = () => {
     const params = useParams();
     const projectId = params.projectId;
@@ -56,13 +56,13 @@ const ProjectPage = () => {
             <Text>Repository Name: {project.repoName}</Text>
             <Button
                 onClick={() => {
-                    notifications.show({ message: "Deploying project...", color: 'blue' });
-                    apiGet(API_ROUTES.GET_DEPLOY, { projectId: project.id, key: project.deploymentKey ?? "" }, undefined)
+                    notifications.show({ message: 'Deploying project...', color: 'blue' });
+                    apiGet(API_ROUTES.GET_DEPLOY, { projectId: project.id, key: project.deploymentKey ?? '' }, undefined)
                         .then(() => {
-                            notifications.show({ message: "Project deployed successfully!", color: 'green' });
+                            notifications.show({ message: 'Project deployed successfully!', color: 'green' });
                         })
                         .catch(() => {
-                            notifications.show({ message: "Error deploying project", color: 'red' });
+                            notifications.show({ message: 'Error deploying project', color: 'red' });
                         });
                 }}
             >
@@ -73,4 +73,3 @@ const ProjectPage = () => {
 };
 
 export default ProjectPage;
-

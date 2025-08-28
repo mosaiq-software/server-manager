@@ -1,4 +1,4 @@
-import { DeploymentState, Project } from "./types";
+import { DeploymentState, Project } from './types';
 
 // ===== ROUTES =====
 export enum API_ROUTES {

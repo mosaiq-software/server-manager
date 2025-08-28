@@ -1,9 +1,6 @@
 export type UID = `${string}-${string}-${string}-${string}-${string}`;
 
-export enum IdPrefixes {
-}
-
-
+export enum IdPrefixes {}
 
 const DUMMY_UUID: UID = 'DUMMY-DUMMY-DUMMY-DUMMY-DUMMY';
 

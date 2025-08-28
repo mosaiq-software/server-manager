@@ -1,6 +1,6 @@
 /** @type {import('prettier').Config} */
 const PrettierConfig = {
-    plugins: ['prettier-plugin-organize-imports'],
+    plugins: [],
     trailingComma: 'es5',
     bracketSpacing: true,
     objectWrap: 'preserve',

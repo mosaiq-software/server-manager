@@ -34,13 +34,13 @@ export const getReposEnvFiles = async (projectId: string): Promise<EnvFile[]> =>
             console.log('Not in production mode, skipping repository data retrieval');
             return [];
         }
-        
+
         cloneRepository(projectId, project.repoOwner, project.repoName);
         const envPaths = getEnvFilesFromDir(`${process.env.WEBAPPS_PATH}/${projectId}`);
-        const envFiles: EnvFile[] = envPaths.map(path => ({
+        const envFiles: EnvFile[] = envPaths.map((path) => ({
             path,
             env: path.split(`${process.env.WEBAPPS_PATH}/${projectId}`)[1].split('.env')[0],
-            contents: getFileContents(path)
+            contents: getFileContents(path),
         }));
 
         return envFiles;
@@ -81,7 +81,7 @@ const cloneRepository = (projectId: string, repoOwner: string, repoName: string)
     let dirExists = false;
     try {
         const stdout = execSync(`test -d ${process.env.WEBAPPS_PATH}/${projectId} && echo true`).toString().trim();
-        dirExists = stdout === "true";
+        dirExists = stdout === 'true';
     } catch (e) {
         dirExists = false;
     }
@@ -101,7 +101,7 @@ const cloneRepository = (projectId: string, repoOwner: string, repoName: string)
         console.error('Error cloning repository:', e);
         return;
     }
-}
+};
 
 const runDeploymentCommand = (projectId: string, runCommand: string) => {
     if (process.env.PRODUCTION !== 'true') {
