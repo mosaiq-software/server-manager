@@ -39,7 +39,7 @@ const DashboardPage = () => {
 
     const handleCreateProject = async () => {
         try {
-            await apiPost(API_ROUTES.POST_CREATE_PROJECT, {}, {id: newProject.id, repoUrl: newProject.repositoryUrl, runCommand: newProject.runCommand}, "AUTH TOKEN...");
+            await apiPost(API_ROUTES.POST_CREATE_PROJECT, {}, newProject, "AUTH TOKEN...");
             notifications.show({
                 title: 'Success',
                 message: 'Project created successfully',
