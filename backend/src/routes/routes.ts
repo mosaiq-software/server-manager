@@ -1,4 +1,5 @@
-import { createProject, deployProject, getAllProjects, getProject, resetDeploymentKey, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
+import { createProject, getAllProjects, getProject, resetDeploymentKey, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
+import { deployProject } from '@/controllers/deployController';
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { verify } from 'crypto';
 import express from 'express';
@@ -72,7 +73,7 @@ router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
 router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_PROJECT];
     try {
-        await createProject(body.id, body.repoUrl, body.runCommand);
+        await createProject(body);
         const response: API_RETURN[API_ROUTES.POST_CREATE_PROJECT] = undefined;
         res.status(200).json(response);
     } catch (e: any) {
@@ -89,7 +90,7 @@ router.post(API_ROUTES.POST_UPDATE_PROJECT, async (req, res) => {
             res.status(400).send('No projectId');
             return;
         }
-        await updateProject(params.projectId, body.repoUrl, body.runCommand);
+        await updateProject(params.projectId, body);
         const response: API_RETURN[API_ROUTES.POST_UPDATE_PROJECT] = undefined;
         res.status(200).json(response);
     } catch (e: any) {

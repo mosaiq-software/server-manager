@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {apiGet, apiPost} from '@/utils/api';
 
 const DashboardPage = () => {
@@ -11,10 +11,9 @@ const DashboardPage = () => {
     const [modal, setModal] = useState<'create' | null>(null);
     const [newProject, setNewProject] = useState<Project>({
         id: '',
-        repositoryUrl: '',
-        deploymentKey: '',
-        runCommand: '',
-        state: DeploymentState.READY
+        repoOwner: 'mosaiq-software',
+        repoName: '',
+        runCommand: 'npm run deploy',
     });
     const [projects, setProjects] = useState<Partial<Project>[]>([]);
 
@@ -62,39 +61,58 @@ const DashboardPage = () => {
     if (modal === 'create') {
         ModalComponent = (
             <Modal opened={true} onClose={() => setModal(null)}>
-                <Title>Create Project</Title>
-                <TextInput
-                    label="Project Slug (Can't be changed later)"
-                    placeholder='terrazzo'
-                    value={newProject?.id || ''}
-                    onChange={(e) => setNewProject({ ...newProject, id: e.target.value })}
-                />
-                <TextInput
-                    label="Repo URL"
-                    placeholder='https://github.com/...'
-                    value={newProject?.repositoryUrl || ''}
-                    onChange={(e) => setNewProject({ ...newProject, repositoryUrl: e.target.value })}
-                />
-                <TextInput
-                    label="Run Command"
-                    placeholder='npm run deploy'
-                    value={newProject?.runCommand || ''}
-                    onChange={(e) => setNewProject({ ...newProject, runCommand: e.target.value })}
-                />
-                <Group justify='space-between' >
-                    <Button
-                        variant="outline"
-                        onClick={() => setModal(null)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="filled"
-                        onClick={handleCreateProject}
-                    >
-                        Create
-                    </Button>
-                </Group>
+                <Stack
+                >
+                    <Title order={3}>Create Project</Title>
+                    <TextInput
+                        label="Project ID"
+                        placeholder='terrazzo'
+                        description="The unique identifier for the project. Cannot be changed later."
+                        value={newProject?.id || ''}
+                        onChange={(e) => setNewProject({ ...newProject, id: e.target.value })}
+                        />
+                    <TextInput
+                        label="Repo Owner"
+                        placeholder='mosaiq-software'
+                        description="As seen in the URL"
+                        value={newProject?.repoOwner || ''}
+                        onChange={(e) => setNewProject({ ...newProject, repoOwner: e.target.value })}
+                        />
+                    <TextInput
+                        label="Repo Name"
+                        placeholder='terrazzo-api'
+                        description="As seen in the URL"
+                        value={newProject?.repoName || ''}
+                        onChange={(e) => setNewProject({ ...newProject, repoName: e.target.value })}
+                    />
+                    {
+                        newProject.repoOwner && newProject.repoName &&
+                        <Link to={`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}>
+                            {`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}
+                        </Link>
+                    }
+                    <TextInput
+                        label="Deployment Command"
+                        placeholder='npm run deploy'
+                        description="Can use node, npm, docker, or shell"
+                        value={newProject?.runCommand || ''}
+                        onChange={(e) => setNewProject({ ...newProject, runCommand: e.target.value })}
+                    />
+                    <Group justify='space-between' >
+                        <Button
+                            variant="outline"
+                            onClick={() => setModal(null)}
+                            >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="filled"
+                            onClick={handleCreateProject}
+                            >
+                            Create
+                        </Button>
+                    </Group>
+                </Stack>
             </Modal>
         );
     }
@@ -115,7 +133,7 @@ const DashboardPage = () => {
                             }}
                         >
                             <Title order={4}>{project.id}</Title>
-                            <Text>{project.repositoryUrl}</Text>
+                            <Text>{`https://github.com/${project.repoOwner}/${project.repoName}`}</Text>
                             <Text>{project.state}</Text>
                         </Card>
                     ))

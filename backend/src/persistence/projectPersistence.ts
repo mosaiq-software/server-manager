@@ -4,7 +4,8 @@ import { DataTypes, Model } from 'sequelize';
 export interface ProjectModelType {
     id: string;
     state: DeploymentState;
-    repositoryUrl: string;
+    repoOwner: string;
+    repoName: string;
     deploymentKey: string;
     runCommand: string;
     createdAt?: string;
@@ -19,7 +20,8 @@ ProjectModel.init(
         },
         name: DataTypes.STRING,
         state: DataTypes.STRING,
-        repositoryUrl: DataTypes.STRING,
+        repoOwner: DataTypes.STRING,
+        repoName: DataTypes.STRING,
         deploymentKey: DataTypes.STRING,
         runCommand: DataTypes.STRING,
     },

@@ -1,11 +1,20 @@
 export interface Project {
     id: string;
-    state: DeploymentState;
-    repositoryUrl: string;
-    deploymentKey: string;
+    repoOwner: string;
+    repoName: string;
     runCommand: string;
+    state?: DeploymentState;
+    deploymentKey?: string;
     createdAt?: string;
     updatedAt?: string;
+}
+
+export interface Secret {
+    projectId: string;
+    env: string;
+    secretName: string;
+    secretValue: string;
+    secretPlaceholder: string;
 }
 
 

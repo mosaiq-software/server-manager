@@ -26,15 +26,15 @@ export interface API_PARAMS {
 export interface API_BODY {
     // Only POST
     //POST
-    [API_ROUTES.POST_CREATE_PROJECT]: { id:string, repoUrl: string, runCommand: string };
-    [API_ROUTES.POST_UPDATE_PROJECT]: { repoUrl?: string, runCommand?: string };
+    [API_ROUTES.POST_CREATE_PROJECT]: Project;
+    [API_ROUTES.POST_UPDATE_PROJECT]: Partial<Project> & { id: string };
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: {};
 }
 export interface API_RETURN {
     //GET
     [API_ROUTES.GET_DEPLOY]: undefined;
     [API_ROUTES.GET_PROJECT]: Project | undefined;
-    [API_ROUTES.GET_PROJECTS]: {id:string, repositoryUrl:string, state:DeploymentState}[];
+    [API_ROUTES.GET_PROJECTS]: Project[];
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: undefined;

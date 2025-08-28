@@ -52,11 +52,12 @@ const ProjectPage = () => {
     return (
         <Stack>
             <Title>{project.id}</Title>
-            <Text>Repository URL: {project.repositoryUrl}</Text>
+            <Text>Repository Owner: {project.repoOwner}</Text>
+            <Text>Repository Name: {project.repoName}</Text>
             <Button
                 onClick={() => {
                     notifications.show({ message: "Deploying project...", color: 'blue' });
-                    apiGet(API_ROUTES.GET_DEPLOY, { projectId: project.id, key: project.deploymentKey }, undefined)
+                    apiGet(API_ROUTES.GET_DEPLOY, { projectId: project.id, key: project.deploymentKey ?? "" }, undefined)
                         .then(() => {
                             notifications.show({ message: "Project deployed successfully!", color: 'green' });
                         })
