@@ -7,6 +7,12 @@ export interface Project {
     deploymentKey?: string;
     createdAt?: string;
     updatedAt?: string;
+    envs?: DotenvData[];
+}
+
+export interface DotenvData {
+    env: string;
+    secrets: Secret[];
 }
 
 export interface Secret {

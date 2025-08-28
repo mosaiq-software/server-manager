@@ -2,61 +2,117 @@ import { getProjectByIdModel } from '@/persistence/projectPersistence';
 import { executeCommandOnHost } from '@/utils/hostExecutor';
 import { execSync } from 'child_process';
 
-
-
 export const deployProject = async (projectId: string): Promise<void> => {
     try {
         const project = await getProjectByIdModel(projectId);
         if (!project) throw new Error('Project not found');
 
         if (process.env.PRODUCTION !== 'true') {
-            console.log('Not in production mode, skipping GitHub fingerprint application');
+            console.log('Not in production mode, skipping deployment');
             return;
         }
 
-        // Get the repository loaded into the working directory
-        const webappsDir = process.env.WEBAPPS_PATH;
-        try {
-            execSync(`cd ${webappsDir}`);
-        } catch (error) {
-            console.error('Error changing directory:', error);
-            return;
-        }
-        let dirExists = false;
-        try {
-            const stdout = execSync(`test -d ./${projectId} && echo true`).toString().trim();
-            dirExists = stdout === "true";
-        } catch (e) {
-            dirExists = false;
-        }
-        if (!dirExists) {
-            try {
-                execSync(`rm -rf ${webappsDir}/${projectId}`);
-            } catch (e) {
-                console.error('Error removing directory:', e);
-                return;
-            }
-        }
-
-        try {
-            const gitSshUri = `git@github.com:${project.repoOwner}/${project.repoName}.git`;
-            execSync(`git clone -c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}" ${gitSshUri} ${webappsDir}/${projectId}`);
-        } catch (e) {
-            console.error('Error cloning repository:', e);
-            return;
-        }
-
-        // Run the deployment command
-        const deploymentCommand = `cd ${webappsDir}/${projectId} && ${project.runCommand}`;
-        try {
-            const deploymentStdout = executeCommandOnHost(deploymentCommand);
-            console.log('Deployment output:', deploymentStdout);
-
-        } catch (e) {
-            console.error('Error running deployment command:', deploymentCommand, e);
-            return;
-        }
+        cloneRepository(projectId, project.repoOwner, project.repoName);
+        runDeploymentCommand(projectId, project.runCommand);
     } catch (error) {
         console.error('Error deploying project:', error);
+    }
+};
+
+export interface EnvFile {
+    path: string;
+    env: string;
+    contents: string;
+}
+
+export const getReposEnvFiles = async (projectId: string): Promise<EnvFile[]> => {
+    try {
+        const project = await getProjectByIdModel(projectId);
+        if (!project) throw new Error('Project not found');
+
+        if (process.env.PRODUCTION !== 'true') {
+            console.log('Not in production mode, skipping repository data retrieval');
+            return [];
+        }
+        
+        cloneRepository(projectId, project.repoOwner, project.repoName);
+        const envPaths = getEnvFilesFromDir(`${process.env.WEBAPPS_PATH}/${projectId}`);
+        const envFiles: EnvFile[] = envPaths.map(path => ({
+            path,
+            env: path.split(`${process.env.WEBAPPS_PATH}/${projectId}`)[1].split('.env')[0],
+            contents: getFileContents(path)
+        }));
+
+        return envFiles;
+    } catch (error) {
+        console.error('Error retrieving project:', error);
+        return [];
+    }
+};
+
+const getFileContents = (filePath: string): string => {
+    if (process.env.PRODUCTION !== 'true') {
+        console.log('Not in production mode, skipping file retrieval');
+        return '';
+    }
+    try {
+        const fileContents = execSync(`cat ${filePath}`).toString();
+        return fileContents;
+    } catch (error) {
+        console.error('Error retrieving file contents:', error);
+        return '';
+    }
+};
+
+const getEnvFilesFromDir = (dir: string): string[] => {
+    if (process.env.PRODUCTION !== 'true') {
+        console.log('Not in production mode, skipping .env file retrieval');
+        return [];
+    }
+    const envFiles = execSync(`find ${dir} -name ".env*"`).toString().trim().split('\n');
+    return envFiles;
+};
+
+const cloneRepository = (projectId: string, repoOwner: string, repoName: string) => {
+    if (process.env.PRODUCTION !== 'true') {
+        console.log('Not in production mode, skipping repository clone');
+        return;
+    }
+    let dirExists = false;
+    try {
+        const stdout = execSync(`test -d ${process.env.WEBAPPS_PATH}/${projectId} && echo true`).toString().trim();
+        dirExists = stdout === "true";
+    } catch (e) {
+        dirExists = false;
+    }
+    if (!dirExists) {
+        try {
+            execSync(`rm -rf ${process.env.WEBAPPS_PATH}/${projectId}`);
+        } catch (e) {
+            console.error('Error removing directory:', e);
+            return;
+        }
+    }
+
+    try {
+        const gitSshUri = `git@github.com:${repoOwner}/${repoName}.git`;
+        execSync(`git clone -c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}" ${gitSshUri} ${process.env.WEBAPPS_PATH}/${projectId}`);
+    } catch (e) {
+        console.error('Error cloning repository:', e);
+        return;
+    }
+}
+
+const runDeploymentCommand = (projectId: string, runCommand: string) => {
+    if (process.env.PRODUCTION !== 'true') {
+        console.log('Not in production mode, skipping deployment execution');
+        return;
+    }
+    const deploymentCommand = `(cd ${process.env.WEBAPPS_PATH}/${projectId} && ${runCommand})`;
+    try {
+        const deploymentStdout = executeCommandOnHost(deploymentCommand);
+        console.log('Deployment output:', deploymentStdout);
+    } catch (e) {
+        console.error('Error running deployment command:', deploymentCommand, e);
     }
 };

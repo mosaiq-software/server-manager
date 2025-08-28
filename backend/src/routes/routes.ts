@@ -73,6 +73,10 @@ router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
 router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_PROJECT];
     try {
+        if(!body || !body.id || !body.repoOwner || !body.repoName || !body.runCommand) {
+            res.status(400).send('Invalid request body');
+            return;
+        }
         await createProject(body);
         const response: API_RETURN[API_ROUTES.POST_CREATE_PROJECT] = undefined;
         res.status(200).json(response);

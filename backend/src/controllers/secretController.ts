@@ -1,57 +1,44 @@
 import { createSecretModel, deleteAllSecretsForProjectEnvModel, getAllSecretsForProjectModel } from "@/persistence/secretPersistence";
-import { Secret } from "@mosaiq/nsm-common/types";
+import { DotenvData, Secret } from "@mosaiq/nsm-common/types";
+import { parseSampleDotenv } from "@mosaiq/nsm-common/secretUtil";
 
 
-export const getAllSecretEnvsForProject = async (projectId: string): Promise<{ [env: string]: Secret[] }> => {
+export const getAllSecretEnvsForProject = async (projectId: string): Promise<DotenvData[]> => {
     const secrets = await getAllSecretsForProjectModel(projectId);
-    const envs: { [env: string]: Secret[] } = {};
+    const envs: DotenvData[] = [];
 
     for (const sec of secrets) {
-        if (!envs[sec.env]) {
-            envs[sec.env] = [];
+        let env = envs.find(e => e.env === sec.env);
+        if(!env){
+            env = {
+                env: sec.env,
+                secrets: [],
+            }
+            envs.push(env);
         }
-        envs[sec.env].push(sec);
+        env.secrets.push(sec);
     }
 
     return envs;
 };
 
-export const getDotenvsForProject = async (projectId: string): Promise<{ [env: string]: string }> => {
-    const envs = await getAllSecretEnvsForProject(projectId);
-    const dotenvs: { [env: string]: string } = {};
+// export const getDotenvsForProject = async (projectId: string): Promise<{ [env: string]: string }> => {
+//     const envs = await getAllSecretEnvsForProject(projectId);
+//     const dotenvs: { [env: string]: string } = {};
 
-    for (const [env, secrets] of Object.entries(envs)) {
-        dotenvs[env] = secrets.map(sec => `${sec.secretName}=${sec.secretValue}`).join('\n');
-    }
+//     for (const [env, secrets] of Object.entries(envs)) {
+//         dotenvs[env] = assembleDotenv(env, secrets);
+//     }
 
-    return dotenvs;
-};
+//     return dotenvs;
+// };
 
-export const parseSampleDotenv = (dotenv: string, projectId: string, env: string): Secret[] => {
-    const lines = dotenv.split('\n');
-    const secrets: Secret[] = [];
-
-    for (const line of lines) {
-        const [key, value] = line.split('=');
-        if (key) {
-            secrets.push({
-                projectId: projectId,
-                env: env,
-                secretName: key.trim(),
-                secretValue: '',
-                secretPlaceholder: value?.trim() ?? ''
-            });
-        }
-    }
-
-    return secrets;
-};
 
 export const applyDotenv = async (dotenv: string, projectId: string, env: string) => {
     const updatedSecrets = parseSampleDotenv(dotenv, projectId, env);
     
-    const currentEnvs = await getAllSecretEnvsForProject(projectId);
-    const currentSecrets = currentEnvs[env] || [];
+    const projectSecrets = await getAllSecretsForProjectModel(projectId);
+    const currentSecrets = projectSecrets.filter(sec => sec.env === env);
 
     for (const uSec of updatedSecrets) {
         const currentSecret = currentSecrets.find(sec => sec.secretName === uSec.secretName);

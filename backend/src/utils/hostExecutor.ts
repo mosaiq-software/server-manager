@@ -1,4 +1,4 @@
-import {execSync} from "child_process";
+import {exec, execSync} from "child_process";
 
 export const executeCommandOnHost = (command: string): string | undefined => {
     const pipePath = process.env.NSM_PIPE_PATH;
@@ -11,7 +11,7 @@ export const executeCommandOnHost = (command: string): string | undefined => {
 
     const stdoutDump = process.env.NSM_OUTPUT_PATH;
     try {
-        const stdout = execSync(`cat ${stdoutDump}`).toString();
+        const stdout = exec(`cat ${stdoutDump}`).toString();
         return stdout;
     } catch (e) {
         console.error(`Error reading command output: ${e}`);

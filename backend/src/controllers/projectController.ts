@@ -1,5 +1,7 @@
 import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModel } from '@/persistence/projectPersistence';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
+import { getReposEnvFiles } from './deployController';
+import { applyDotenv } from './secretController';
 
 
 export const getProject = async (projectId: string) => {
@@ -41,6 +43,12 @@ export const createProject = async (project: Project) => {
             state: DeploymentState.READY,
         };
         await createProjectModel(project.id, newProject);
+
+        const envFiles = await getReposEnvFiles(project.id);
+        for (const envFile of envFiles) {
+            applyDotenv(envFile.contents, project.id, envFile.env);
+        }
+
     } catch (error) {
         console.error('Error creating project:', error);
         return null;
