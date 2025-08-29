@@ -1,10 +1,7 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModel } from '@/persistence/projectPersistence';
-import { executeCommandOnHost } from '@/utils/hostExecutor';
+import { execSafe, execSafeOnHost } from '@/utils/execUtils';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
-import * as util from 'util';
-import * as child_process from 'child_process';
-const execAsync = util.promisify(child_process.exec);
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
     let logId: string | undefined;
@@ -20,11 +17,10 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         await updateProjectModel(projectId, {state: DeploymentState.DEPLOYING});
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...', DeploymentState.DEPLOYING);
 
-        const cloneStdout = await cloneRepository(projectId, project.repoOwner, project.repoName);
-        await updateDeploymentLogModel(logId, {log: cloneStdout});
-        const deployStdout = await runDeploymentCommand(projectId, project.runCommand);
+        await cloneRepository(projectId, project.repoOwner, project.repoName, logId);
+        await runDeploymentCommand(projectId, project.runCommand, logId);
         await updateProjectModel(projectId, {state: DeploymentState.ACTIVE});
-        await updateDeploymentLogModel(logId, {log: deployStdout || 'Deployment completed without logs?!', status: DeploymentState.ACTIVE});
+        await updateDeploymentLogModel(logId, {log: "Deployment complete!", status: DeploymentState.ACTIVE});
     } catch (error:any) {
         console.error('Error deploying project:', error);
         await updateProjectModel(projectId, {state: DeploymentState.FAILED});
@@ -51,7 +47,7 @@ export const getReposEnvFiles = async (projectId: string): Promise<EnvFile[]> =>
             return [];
         }
 
-        cloneRepository(projectId, project.repoOwner, project.repoName);
+        await cloneRepository(projectId, project.repoOwner, project.repoName);
         const envPaths = await getEnvFilesFromDir(`${process.env.WEBAPPS_PATH}/${projectId}`);
         const envFiles: EnvFile[] = await Promise.all(envPaths.map(async (path) => ({
             path,
@@ -72,8 +68,12 @@ const getFileContents = async (filePath: string): Promise   <string> => {
         return '';
     }
     try {
-        const { stdout } = await execAsync(`cat ${filePath}`);
-        return stdout;
+        const { out:catOut, code:catCode } = await execSafe(`cat ${filePath}`);
+        if (catCode !== 0) {
+            console.error('Error retrieving file contents:', catOut);
+            return '';
+        }
+        return catOut;
     } catch (error) {
         console.error('Error retrieving file contents:', error);
         return '';
@@ -85,53 +85,75 @@ const getEnvFilesFromDir = async (dir: string): Promise<string[]> => {
         console.log('Not in production mode, skipping .env file retrieval');
         return [];
     }
-    const {stdout} = await execAsync(`find ${dir} -name ".env*"`);
-    return stdout.trim().split('\n');
+    const {out:findOut, code:findCode} = await execSafe(`find ${dir} -name ".env*"`);
+    if (findCode !== 0) {
+        console.error('Error finding .env files:', findOut);
+        return [];
+    }
+    return findOut.trim().split('\n');
 };
 
-const cloneRepository = async (projectId: string, repoOwner: string, repoName: string) => {
+const cloneRepository = async (projectId: string, repoOwner: string, repoName: string, logId?: string): Promise<void> => {
     if (process.env.PRODUCTION !== 'true') {
         console.log('Not in production mode, skipping repository clone');
         return;
     }
     
     try {
-        const {stderr, stdout} = await execAsync(`rm -rf ${process.env.WEBAPPS_PATH}/${projectId}`);
-        if (stderr) {
-            console.error('Error removing directory:', stderr);
-            return `Error removing directory: ${stderr}`;
+        const {out:rmOut, code:rmCode} = await execSafe(`rm -rf ${process.env.WEBAPPS_PATH}/${projectId}`);
+        if(logId){
+            await updateDeploymentLogModel(logId, {log: rmOut});
+        }
+        if (rmCode !== 0) {
+            throw new Error(`Remove directory exited with code ${rmCode}`);
         }
     } catch (e:any) {
-        console.error('Node Error removing directory:', e);
-        return `Node Error removing directory: ${e.message}`;
+        console.error('Error removing directory:', e);
+        if(logId){
+            await updateDeploymentLogModel(logId, {log: `Error removing directory: ${e.message}`});
+        }
+        return;
     }
 
     try {
         const gitSshUri = `git@github.com:${repoOwner}/${repoName}.git`;
-        const cmd = `git clone -c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}" ${gitSshUri} ${process.env.WEBAPPS_PATH}/${projectId}`;
-        child_process.exec(cmd, (error, stdout, stderr) => {
-            console.log('error:', error);
-            console.log('stdout:', stdout);
-            console.error('stderr:', stderr);
-        });
-        return `Cloned repository ${repoOwner}/${repoName}`;
+        const cmd = `git clone --progress -c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}" ${gitSshUri} ${process.env.WEBAPPS_PATH}/${projectId}`;
+        const {out:gitOut, code:gitCode} = await execSafe(cmd, 1000 * 60 * 5);
+        if(logId){
+            await updateDeploymentLogModel(logId, {log: gitOut});
+        }
+        if (gitCode !== 0) {
+            throw new Error(`Git clone exited with code ${gitCode}`);
+        }
+        return;
     } catch (e:any) {
-        console.error('Node Error cloning repository:', e);
-        return `Node Error cloning repository: ${e.message}`;
+        console.error('Error cloning repository:', e);
+        if(logId){
+            await updateDeploymentLogModel(logId, {log: `Error cloning repository: ${e.message}`});
+        }
+        throw e;
     }
 };
 
-const runDeploymentCommand = async (projectId: string, runCommand: string) => {
+const runDeploymentCommand = async (projectId: string, runCommand: string, logId?: string): Promise<void> => {
     if (process.env.PRODUCTION !== 'true') {
         console.log('Not in production mode, skipping deployment execution');
         return;
     }
     const deploymentCommand = `(cd ${process.env.WEBAPPS_PATH}/${projectId} && ${runCommand})`;
     try {
-        const deploymentStdout = await executeCommandOnHost(deploymentCommand);
-        return deploymentStdout;
-    } catch (e) {
+        const deploymentStdout = await execSafeOnHost(deploymentCommand);
+        if (logId) {
+            await updateDeploymentLogModel(logId, {log: deploymentStdout});
+        }
+        if (deploymentStdout.code !== 0) {
+            throw new Error(`Deployment command exited with code ${deploymentStdout.code}`);
+        }
+    } catch (e:any) {
         console.error('Error running deployment command:', deploymentCommand, e);
+        if (logId) {
+            await updateDeploymentLogModel(logId, {log: `Error running deployment command: ${e.message}`});
+        }
         throw e;
     }
 };
