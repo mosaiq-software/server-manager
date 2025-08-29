@@ -8,6 +8,7 @@ export interface Project {
     createdAt?: string;
     updatedAt?: string;
     envs?: DotenvData[];
+    deployLogs?: DeployLogHeader[];
 }
 
 export interface DotenvData {
@@ -23,10 +24,13 @@ export interface Secret {
     secretPlaceholder: string;
 }
 
-export interface DeploymentLog {
+export interface DeployLogHeader {
     id: string;
+    createdAt: string;
     projectId: string;
     status: DeploymentState;
+}
+export interface DeploymentLog extends DeployLogHeader {
     log: string;
 }
 
