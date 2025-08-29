@@ -47,7 +47,7 @@ const ProjectDeployPage = () => {
     const handleDeploy = async () => {
         if(!project) return;
         notifications.show({ message: 'Deploying project...', color: 'blue' });
-        const status = await apiGet(API_ROUTES.GET_DEPLOY, { projectId: project.id, key: project.deploymentKey ?? '' }, undefined)
+        const status = await apiGet(API_ROUTES.GET_DEPLOY_WEB, { projectId: project.id, key: project.deploymentKey ?? '' }, undefined)
         if(status === DeploymentState.ACTIVE) {
             notifications.show({ message: 'Deployment successful!', color: 'green' });
             return;
