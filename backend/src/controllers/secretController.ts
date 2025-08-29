@@ -26,7 +26,7 @@ export const getAllSecretEnvsForProject = async (projectId: string): Promise<Dot
 //     const dotenvs: { [env: string]: string } = {};
 
 //     for (const [env, secrets] of Object.entries(envs)) {
-//         dotenvs[env] = assembleDotenv(env, secrets);
+//         dotenvs[env] = assembleDotenv(secrets);
 //     }
 
 //     return dotenvs;

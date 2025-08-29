@@ -1,6 +1,6 @@
 import { Secret } from './types';
 
-export const assembleDotenv = (envName: string, secrets: Secret[]): string => {
+export const assembleDotenv = (secrets: Secret[]): string => {
     return secrets.map((sec) => `${sec.secretName}=${sec.secretValue}`).join('\n');
 };
 

@@ -146,11 +146,11 @@ router.post(API_ROUTES.POST_UPDATE_ENV_VAR, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_UPDATE_ENV_VAR];
     const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_ENV_VAR];
     try {
-        if (!params.projectId || !params.envName || !params.var) {
+        if (!params.projectId || !body.envName || !body.varName) {
             res.status(400).send('Invalid request');
             return;
         }
-        await updateEnvironmentVariable(params.projectId, params.envName, params.var, body.value);
+        await updateEnvironmentVariable(params.projectId, body.envName, body.varName, body.value);
         res.status(200).send('Environment variable updated');
     } catch (e: any) {
         console.error('Error updating environment variable', e);

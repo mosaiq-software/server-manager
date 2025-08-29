@@ -8,6 +8,7 @@ interface EditableTextInputProps {
     label?: string;
     description?: string;
     value: string;
+    placeholder?: string;
     onChange?: (newValue: string) => void;
     orientation?: "horizontal" | "vertical";
 }
@@ -43,7 +44,7 @@ export const EditableTextInput = (props: EditableTextInputProps) => {
     };
 
     return (
-        <Flex align="flex-start" direction={props.orientation === "vertical" ? "column" : "row"} gap="sm" wrap="nowrap">
+        <Flex align="flex-end" direction={props.orientation === "vertical" ? "column" : "row"} gap="sm" wrap="nowrap">
 
             <TextInput
                 ref={inputRef}
@@ -54,6 +55,7 @@ export const EditableTextInput = (props: EditableTextInputProps) => {
                 onDoubleClick={handleEnableEdit}
                 autoFocus={editing}
                 readOnly={!editing}
+                placeholder={props.placeholder}
                 styles={{
                     input: {
                         borderColor: editing ? 'blue' : 'transparent',
@@ -71,4 +73,4 @@ export const EditableTextInput = (props: EditableTextInputProps) => {
             }
         </Flex>
     );
-};
+}; 

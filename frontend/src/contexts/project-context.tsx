@@ -73,7 +73,7 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
 
     const updateSecret = async (projectId: string, envName: string, secretName: string, newValue: string) => {
         try {
-            await apiPost(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId, envName, var: secretName }, { value: newValue }, 'AUTH TOKEN...');
+            await apiPost(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId }, { value: newValue, envName, varName: secretName }, 'AUTH TOKEN...');
             setProjects((prev) => prev.map((proj) => (proj.id === projectId ? {
                 ...proj,
                 envs: (proj.envs || []).map((env) => (env.env === envName ? {

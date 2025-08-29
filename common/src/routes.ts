@@ -12,7 +12,7 @@ export enum API_ROUTES {
     POST_CREATE_PROJECT = '/project/create',
     POST_UPDATE_PROJECT = '/project/:projectId/update',
     POST_RESET_DEPLOYMENT_KEY = '/project/:projectId/reset-key',
-    POST_UPDATE_ENV_VAR = '/project/:projectId/env/:envName/update/:var',
+    POST_UPDATE_ENV_VAR = '/project/:projectId/updateEnvVar',
 }
 export interface API_PARAMS {
     //GET
@@ -25,7 +25,7 @@ export interface API_PARAMS {
     [API_ROUTES.POST_CREATE_PROJECT]: {};
     [API_ROUTES.POST_UPDATE_PROJECT]: { projectId: string };
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: { projectId: string };
-    [API_ROUTES.POST_UPDATE_ENV_VAR]: { projectId: string; envName: string; var: string };
+    [API_ROUTES.POST_UPDATE_ENV_VAR]: { projectId: string; };
 }
 export interface API_BODY {
     // Only POST
@@ -33,7 +33,7 @@ export interface API_BODY {
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
     [API_ROUTES.POST_UPDATE_PROJECT]: Partial<Project>;
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: {};
-    [API_ROUTES.POST_UPDATE_ENV_VAR]: { value: string };
+    [API_ROUTES.POST_UPDATE_ENV_VAR]: { value: string, envName: string, varName: string };
 }
 export interface API_RETURN {
     //GET
