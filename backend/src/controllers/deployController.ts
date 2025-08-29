@@ -1,29 +1,35 @@
+import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModel } from '@/persistence/projectPersistence';
 import { executeCommandOnHost } from '@/utils/hostExecutor';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
 import { execSync } from 'child_process';
 
-export const deployProject = async (projectId: string): Promise<boolean> => {
+export const deployProject = async (projectId: string): Promise<string | undefined> => {
+    let logId: string | undefined;
     try {
         const project = await getProjectByIdModel(projectId);
         if (!project) throw new Error('Project not found');
 
         if (process.env.PRODUCTION !== 'true') {
             console.log('Not in production mode, skipping deployment');
-            return false;
+            return undefined;
         }
 
         await updateProjectModel(projectId, {state: DeploymentState.DEPLOYING});
+        logId = await createDeploymentLogModel(projectId, 'Starting deployment...', DeploymentState.DEPLOYING);
 
         cloneRepository(projectId, project.repoOwner, project.repoName);
-        runDeploymentCommand(projectId, project.runCommand);
+        const deployStdout = runDeploymentCommand(projectId, project.runCommand);
         await updateProjectModel(projectId, {state: DeploymentState.ACTIVE});
-        return true;
-    } catch (error) {
+        await updateDeploymentLogModel(logId, {log: deployStdout || 'Deployment completed', status: DeploymentState.ACTIVE});
+    } catch (error:any) {
         console.error('Error deploying project:', error);
         await updateProjectModel(projectId, {state: DeploymentState.FAILED});
-        return false;
+        if (logId) {
+            await updateDeploymentLogModel(logId, {log: "Error deploying project:\n"+error.message, status: DeploymentState.FAILED});
+        }
     }
+    return logId;
 };
 
 export interface EnvFile {
@@ -121,5 +127,6 @@ const runDeploymentCommand = (projectId: string, runCommand: string) => {
         return deploymentStdout;
     } catch (e) {
         console.error('Error running deployment command:', deploymentCommand, e);
+        throw e;
     }
 };

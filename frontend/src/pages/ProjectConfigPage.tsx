@@ -1,4 +1,4 @@
-import { Button, Center, CopyButton, Divider, Fieldset, Grid, Group, Loader, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Button, Center, CopyButton, Divider, Fieldset, Grid, Group, Loader, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
@@ -49,6 +49,11 @@ const ProjectConfigPage = () => {
                 <EditableTextInput label="Run Command" value={project.runCommand} onChange={(value) => projectCtx.update(project.id, { runCommand: value })} orientation='vertical'/>
                 <EditableTextInput label="Repository Name" value={project.repoName} onChange={(value) => projectCtx.update(project.id, { repoName: value })} orientation='vertical'/>
                 <EditableTextInput label="Repository Owner" value={project.repoOwner} onChange={(value) => projectCtx.update(project.id, { repoOwner: value })} orientation='vertical'/>
+                <Switch
+                    label="Allow CI/CD"
+                    checked={project.allowCICD}
+                    onChange={(e) => projectCtx.update(project.id, { allowCICD: e.currentTarget.checked })}
+                />
             </Group>
             <Divider my="sm" />
             <Title order={5}>Environment Variables</Title>

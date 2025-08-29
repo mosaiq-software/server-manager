@@ -1,5 +1,5 @@
 import { useProjects } from '@/contexts/project-context';
-import { Button, Card, Center, Container, Group, Loader, Modal, Stack, TextInput, Title, Text } from '@mantine/core';
+import { Button, Card, Center, Container, Group, Loader, Modal, Stack, TextInput, Title, Text, Switch } from '@mantine/core';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -15,12 +15,10 @@ const DashboardPage = () => {
     });
     const projectCtx = useProjects();
 
-    let ModalComponent: JSX.Element | null = null;
-
-    if (modal === 'create') {
-        ModalComponent = (
+    return (
+        <Container>
             <Modal
-                opened={true}
+                opened={modal === 'create'}
                 onClose={() => setModal(null)}
             >
                 <Stack>
@@ -54,6 +52,11 @@ const DashboardPage = () => {
                         value={newProject?.runCommand || ''}
                         onChange={(e) => setNewProject({ ...newProject, runCommand: e.target.value })}
                     />
+                    <Switch
+                        label="Allow CI/CD"
+                        checked={newProject?.allowCICD || false}
+                        onChange={(e) => setNewProject({ ...newProject, allowCICD: e.currentTarget.checked })}
+                    />
                     <Group justify="space-between">
                         <Button
                             variant="outline"
@@ -74,12 +77,6 @@ const DashboardPage = () => {
                     </Group>
                 </Stack>
             </Modal>
-        );
-    }
-
-    return (
-        <Container>
-            {ModalComponent}
             <Title>NSM</Title>
             <Button onClick={() => setModal('create')}>Create Project</Button>
             <Stack>

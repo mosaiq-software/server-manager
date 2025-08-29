@@ -1,6 +1,7 @@
-import { Group, Stack, Title } from '@mantine/core';
+import { ActionIcon, Group, Stack, Title } from '@mantine/core';
 import { Project } from '@mosaiq/nsm-common/types';
 import React from 'react';
+import { MdOutlineLaunch } from 'react-icons/md';
 import { Link } from 'react-router';
 
 interface ProjectHeaderProps {
@@ -12,9 +13,14 @@ export const ProjectHeader = (props: ProjectHeaderProps) => {
         <Stack>
             <Group>
                 <Title order={1}>{props.project.id}</Title>
-                <Link to={`https://github.com/${props.project.repoOwner}/${props.project.repoName}`} target='_blank'>
-                    View on GitHub
-                </Link>
+                <ActionIcon
+                    variant='subtle'
+                    component={Link}
+                    to={`https://github.com/${props.project.repoOwner}/${props.project.repoName}`}
+                    target='_blank'
+                >
+                    <MdOutlineLaunch />
+                </ActionIcon>
             </Group>
             <Title order={3}>{props.section}</Title>
         </Stack>

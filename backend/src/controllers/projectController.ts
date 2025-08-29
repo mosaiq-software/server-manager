@@ -42,6 +42,7 @@ export const createProject = async (project: Project) => {
             runCommand: project.runCommand,
             deploymentKey: generateDeploymentKey(),
             state: DeploymentState.READY,
+            allowCICD: !!project.allowCICD,
         };
         await createProjectModel(project.id, newProject);
 
@@ -64,9 +65,10 @@ export const updateProject = async (id: string, updates: Partial<Project>) => {
     }
 };
 
-export const verifyDeploymentKey = async (projectId: string, key: string): Promise<boolean> => {
+export const verifyDeploymentKey = async (projectId: string, key: string, fromWeb: boolean): Promise<boolean> => {
     const project = await getProjectByIdModel(projectId);
     if (!project) return false;
+    if(!fromWeb && !project.allowCICD) return false;
     return project.deploymentKey === key;
 };
 

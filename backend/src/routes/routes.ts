@@ -29,12 +29,36 @@ router.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
             res.status(401).send('Unauthorized');
             return;
         }
-        if (!(await verifyDeploymentKey(params.projectId, params.key))) {
+        if (!(await verifyDeploymentKey(params.projectId, params.key, false))) {
             res.status(403).send('Forbidden');
             return;
         }
-        const success = await deployProject(params.projectId);
-        const response: API_RETURN[API_ROUTES.GET_DEPLOY] = success ? DeploymentState.ACTIVE : DeploymentState.FAILED;
+        await deployProject(params.projectId);
+        const response: API_RETURN[API_ROUTES.GET_DEPLOY] = undefined;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error getting user', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.get(API_ROUTES.GET_DEPLOY_WEB, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.GET_DEPLOY_WEB];
+    try {
+        if (!params.projectId) {
+            res.status(400).send('No projectId');
+            return;
+        }
+        if (!params.key) {
+            res.status(401).send('Unauthorized');
+            return;
+        }
+        if (!(await verifyDeploymentKey(params.projectId, params.key, true))) {
+            res.status(403).send('Forbidden');
+            return;
+        }
+        const logId = await deployProject(params.projectId);
+        const response: API_RETURN[API_ROUTES.GET_DEPLOY_WEB] = logId;
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting user', e);

@@ -4,6 +4,7 @@ import { DeploymentLog, DeploymentState, Project } from './types';
 export enum API_ROUTES {
     // GET
     GET_DEPLOY = '/deploy/:projectId/:key',
+    GET_DEPLOY_WEB = '/deployweb/:projectId/:key',
     GET_PROJECT = '/project/:projectId',
     GET_PROJECTS = '/projects',
     GET_DEPLOY_LOG = '/deploy/:deployLogId',
@@ -17,6 +18,7 @@ export enum API_ROUTES {
 export interface API_PARAMS {
     //GET
     [API_ROUTES.GET_DEPLOY]: { projectId: string; key: string };
+    [API_ROUTES.GET_DEPLOY_WEB]: { projectId: string; key: string };
     [API_ROUTES.GET_PROJECT]: { projectId: string };
     [API_ROUTES.GET_PROJECTS]: {};
     [API_ROUTES.GET_DEPLOY_LOG]: { deployLogId: string };
@@ -37,7 +39,8 @@ export interface API_BODY {
 }
 export interface API_RETURN {
     //GET
-    [API_ROUTES.GET_DEPLOY]: DeploymentState;
+    [API_ROUTES.GET_DEPLOY]: undefined;
+    [API_ROUTES.GET_DEPLOY_WEB]: string | undefined;
     [API_ROUTES.GET_PROJECT]: Project | undefined;
     [API_ROUTES.GET_PROJECTS]: Project[];
     [API_ROUTES.GET_DEPLOY_LOG]: DeploymentLog | undefined;
@@ -52,6 +55,7 @@ export interface API_RETURN {
 export interface API_AUTH {
     // Set to string if it needs an auth token, leave out else
     //GET
+    [API_ROUTES.GET_DEPLOY_WEB]: string;
     [API_ROUTES.GET_PROJECT]: string;
     [API_ROUTES.GET_PROJECTS]: string;
     [API_ROUTES.GET_DEPLOY_LOG]: string;

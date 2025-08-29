@@ -7,6 +7,7 @@ export interface Project {
     deploymentKey?: string;
     createdAt?: string;
     updatedAt?: string;
+    allowCICD?: boolean;
     envs?: DotenvData[];
     deployLogs?: DeployLogHeader[];
 }

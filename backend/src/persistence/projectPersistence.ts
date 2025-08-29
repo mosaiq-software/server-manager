@@ -8,6 +8,7 @@ export interface ProjectModelType {
     repoName: string;
     deploymentKey: string;
     runCommand: string;
+    allowCICD: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -23,6 +24,7 @@ ProjectModel.init(
         repoName: DataTypes.STRING,
         deploymentKey: DataTypes.STRING,
         runCommand: DataTypes.STRING,
+        allowCICD: DataTypes.BOOLEAN,
     },
     { sequelize }
 );
