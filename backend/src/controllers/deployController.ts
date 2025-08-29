@@ -4,7 +4,7 @@ import { executeCommandOnHost } from '@/utils/hostExecutor';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
 import * as util from 'util';
 import * as child_process from 'child_process';
-const exec = util.promisify(child_process.exec);
+const execAsync = util.promisify(child_process.exec);
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
     let logId: string | undefined;
@@ -72,7 +72,7 @@ const getFileContents = async (filePath: string): Promise   <string> => {
         return '';
     }
     try {
-        const { stdout } = await exec(`cat ${filePath}`);
+        const { stdout } = await execAsync(`cat ${filePath}`);
         return stdout;
     } catch (error) {
         console.error('Error retrieving file contents:', error);
@@ -85,7 +85,7 @@ const getEnvFilesFromDir = async (dir: string): Promise<string[]> => {
         console.log('Not in production mode, skipping .env file retrieval');
         return [];
     }
-    const {stdout} = await exec(`find ${dir} -name ".env*"`);
+    const {stdout} = await execAsync(`find ${dir} -name ".env*"`);
     return stdout.trim().split('\n');
 };
 
@@ -96,27 +96,28 @@ const cloneRepository = async (projectId: string, repoOwner: string, repoName: s
     }
     
     try {
-        const {stderr, stdout} = await exec(`rm -rf ${process.env.WEBAPPS_PATH}/${projectId}`);
+        const {stderr, stdout} = await execAsync(`rm -rf ${process.env.WEBAPPS_PATH}/${projectId}`);
         if (stderr) {
             console.error('Error removing directory:', stderr);
             return `Error removing directory: ${stderr}`;
         }
     } catch (e:any) {
-        console.error('Error removing directory:', e);
-        return `Error removing directory: ${e.message}`;
+        console.error('Node Error removing directory:', e);
+        return `Node Error removing directory: ${e.message}`;
     }
 
     try {
         const gitSshUri = `git@github.com:${repoOwner}/${repoName}.git`;
-        const {stderr, stdout} = await exec(`git clone -c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}" ${gitSshUri} ${process.env.WEBAPPS_PATH}/${projectId}`);
-        if (stderr) {
-            console.error('Error cloning repository:', stderr);
-            return `Error cloning repository: ${stderr}`;
-        }
-        return stdout;
+        const cmd = `git clone -c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}" ${gitSshUri} ${process.env.WEBAPPS_PATH}/${projectId}`;
+        child_process.exec(cmd, (error, stdout, stderr) => {
+            console.log('error:', error);
+            console.log('stdout:', stdout);
+            console.error('stderr:', stderr);
+        });
+        return `Cloned repository ${repoOwner}/${repoName}`;
     } catch (e:any) {
-        console.error('Error cloning repository:', e);
-        return `Error cloning repository: ${e.message}`;
+        console.error('Node Error cloning repository:', e);
+        return `Node Error cloning repository: ${e.message}`;
     }
 };
 

@@ -2,12 +2,16 @@ import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectMo
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import { getReposEnvFiles } from './deployController';
 import { applyDotenv, getAllSecretEnvsForProject } from './secretController';
+import { getAllDeploymentLogs } from '@/persistence/deploymentLogPersistence';
 
 export const getProject = async (projectId: string) => {
     const projectData = await getProjectByIdModel(projectId);
     if (!projectData) return undefined;
 
     const allSecretEnvs = await getAllSecretEnvsForProject(projectId);
+    const deployLogs = (await getAllDeploymentLogs(projectId)).map(log => ({
+        ...log, log: ''
+    })).sort((a, b) => (new Date(b.createdAt || '')).getTime() - (new Date(a.createdAt || '')).getTime());
 
     const project: Project = {
         id: projectData.id,
@@ -19,6 +23,7 @@ export const getProject = async (projectId: string) => {
         createdAt: projectData.createdAt,
         updatedAt: projectData.updatedAt,
         envs: allSecretEnvs,
+        deployLogs: deployLogs,
     };
 
     return project;
