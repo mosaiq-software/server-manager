@@ -9,6 +9,7 @@ export interface ProjectModelType {
     deploymentKey: string;
     runCommand: string;
     allowCICD: boolean;
+    timeout?: number;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -25,6 +26,7 @@ ProjectModel.init(
         deploymentKey: DataTypes.STRING,
         runCommand: DataTypes.STRING,
         allowCICD: DataTypes.BOOLEAN,
+        timeout: DataTypes.NUMBER,
     },
     { sequelize }
 );

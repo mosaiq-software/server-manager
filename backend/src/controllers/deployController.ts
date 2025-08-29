@@ -1,7 +1,9 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModel } from '@/persistence/projectPersistence';
-import { execSafe, execSafeOnHost } from '@/utils/execUtils';
+import { DEFAULT_TIMEOUT, execSafe, execSafeOnHostWithOutput, HostExecMessage, sendMessageToNsmExecutor } from '@/utils/execUtils';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
+import {existsSync, readFileSync, truncateSync} from "fs";
+
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
     let logId: string | undefined;
@@ -16,9 +18,10 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         await updateProjectModel(projectId, {state: DeploymentState.DEPLOYING});
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...', DeploymentState.DEPLOYING);
-
+        
         await cloneRepository(projectId, project.repoOwner, project.repoName, logId);
-        await runDeploymentCommand(projectId, project.runCommand, logId);
+        const timeoutms = project.timeout || DEFAULT_TIMEOUT;
+        await runDeploymentCommand(projectId, project.runCommand, timeoutms, logId);
         await updateProjectModel(projectId, {state: DeploymentState.ACTIVE});
         await updateDeploymentLogModel(logId, {log: "Deployment complete!", status: DeploymentState.ACTIVE});
     } catch (error:any) {
@@ -98,7 +101,9 @@ const cloneRepository = async (projectId: string, repoOwner: string, repoName: s
         console.log('Not in production mode, skipping repository clone');
         return;
     }
-    
+    if(logId){
+        await updateDeploymentLogModel(logId, {log: "Cloning repository..."});
+    }
     try {
         const {out:rmOut, code:rmCode} = await execSafe(`rm -rf ${process.env.WEBAPPS_PATH}/${projectId}`);
         if(logId){
@@ -135,25 +140,69 @@ const cloneRepository = async (projectId: string, repoOwner: string, repoName: s
     }
 };
 
-const runDeploymentCommand = async (projectId: string, runCommand: string, logId?: string): Promise<void> => {
+const runDeploymentCommand = async (projectId: string, runCommand: string, timeoutms:number, logId: string): Promise<void> => {
     if (process.env.PRODUCTION !== 'true') {
         console.log('Not in production mode, skipping deployment execution');
         return;
     }
+    await updateDeploymentLogModel(logId, {log: "Running deployment command..."});
     const deploymentCommand = `(cd ${process.env.WEBAPPS_PATH}/${projectId} && ${runCommand})`;
     try {
-        const deploymentStdout = await execSafeOnHost(deploymentCommand);
-        if (logId) {
-            await updateDeploymentLogModel(logId, {log: deploymentStdout});
+
+        // Send the command
+        const messageInstanceId = crypto.randomUUID();
+        const message: HostExecMessage = {
+            projectId,
+            instanceId: messageInstanceId,
+            command: deploymentCommand,
+            cleanup: false,
+            timeout: timeoutms || undefined
+        };
+        console.log('Sending command to executor:', message);
+        const {out:execOut, code:execCode} = await sendMessageToNsmExecutor(message);
+        await updateDeploymentLogModel(logId, {log: execOut});
+        if (execCode !== 0) {
+            throw new Error(`Error sending command to executor, code ${execCode}: ${execOut}`);
         }
-        if (deploymentStdout.code !== 0) {
-            throw new Error(`Deployment command exited with code ${deploymentStdout.code}`);
+    
+        // Stream in the output
+        console.log('Waiting for output file from executor...');
+        const outWorkingFilePath = `${process.env.NSM_OUTPUT_PATH}/${projectId}/${messageInstanceId}.out.working`;
+        const outFilePath = `${process.env.NSM_OUTPUT_PATH}/${projectId}/${messageInstanceId}.out`;
+        const startTime = Date.now();
+        const maxEndTime = startTime + timeoutms + 2000;
+        while (existsSync(outWorkingFilePath)) {
+            const workingContents = readFileSync(outWorkingFilePath, 'utf-8');
+            if(workingContents.length > 0){
+                truncateSync(outWorkingFilePath, 0);
+                await updateDeploymentLogModel(logId, {log: workingContents});
+            }
+            await new Promise(r=>setTimeout(r,1000));
+            if(Date.now() > maxEndTime){
+                console.warn('Timed out waiting for output file from executor');
+                break;
+            }
+        }
+        const outFileContents = readFileSync(outFilePath, 'utf-8');
+        await updateDeploymentLogModel(logId, {log: outFileContents});
+
+        // Clean up the output
+        const cleanupMessage: HostExecMessage = {
+            projectId,
+            instanceId: messageInstanceId,
+            command: '',
+            cleanup: true,
+            timeout: undefined
+        };
+        console.log('Sending cleanup command to executor:', cleanupMessage);
+        const {out:cleanOut, code:cleanCode} = await sendMessageToNsmExecutor(cleanupMessage);
+        await updateDeploymentLogModel(logId, {log: cleanOut});
+        if (cleanCode !== 0) {
+            throw new Error(`Error cleaning up, code ${cleanCode}: ${cleanOut}`);
         }
     } catch (e:any) {
         console.error('Error running deployment command:', deploymentCommand, e);
-        if (logId) {
-            await updateDeploymentLogModel(logId, {log: `Error running deployment command: ${e.message}`});
-        }
+        await updateDeploymentLogModel(logId, {log: `Error running deployment command: ${e.message}`});
         throw e;
     }
 };

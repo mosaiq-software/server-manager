@@ -1,4 +1,4 @@
-import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title, Code } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeployLogHeader, DeploymentState, Project } from '@mosaiq/nsm-common/types';
@@ -218,7 +218,12 @@ const DeployLogItem = (props: DeployLogItemProps) => {
         setText('Fetching log...');
         try{
             const log = await apiGet(API_ROUTES.GET_DEPLOY_LOG, { deployLogId: props.header.id }, "AUTH TOKEN...");
-            setText(log?.log ?? "Failed to find log..");
+            if(!log?.log){
+                setText("Failed to find log..");
+                return;
+            }
+            const logText = log.log.replace("\r", "\n");
+            setText(logText);
         } catch (error) {
             setText("Failed to fetch log..");
         }
@@ -236,7 +241,7 @@ const DeployLogItem = (props: DeployLogItemProps) => {
             </Accordion.Control>
             <Accordion.Panel>
                 <ActionIcon size='xs' onClick={() => handleGetText(true)}><MdOutlineRefresh /></ActionIcon>
-                <Text>{text}</Text>
+                <Code block>{text}</Code>
             </Accordion.Panel>
         </Accordion.Item>
     );

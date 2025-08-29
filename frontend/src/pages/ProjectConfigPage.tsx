@@ -54,6 +54,7 @@ const ProjectConfigPage = () => {
                     checked={project.allowCICD}
                     onChange={(e) => projectCtx.update(project.id, { allowCICD: e.currentTarget.checked })}
                 />
+                <EditableTextInput label="Deployment Timeout (ms)" value={project.timeout?.toString() || ''} onChange={(value) => projectCtx.update(project.id, { timeout: value ? parseInt(value) : undefined })} orientation='vertical'/>
             </Group>
             <Divider my="sm" />
             <Title order={5}>Environment Variables</Title>

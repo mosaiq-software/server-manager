@@ -33,7 +33,7 @@ export const createDeploymentLogModel = async (projectId:string, log:string, sta
 export const updateDeploymentLogModel = async (id: string, data: Partial<DeploymentLog>) => {
     const log = await getDeploymentLogByIdModel(id);
     if (!log) throw new Error('Log not found');
-
+    console.log('Updating deployment log:', id, data);
     return await DeploymentLogModel.update(
         {
             ...data,

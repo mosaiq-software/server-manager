@@ -10,6 +10,7 @@ export interface Project {
     allowCICD?: boolean;
     envs?: DotenvData[];
     deployLogs?: DeployLogHeader[];
+    timeout?: number;
 }
 
 export interface DotenvData {

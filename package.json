@@ -20,7 +20,9 @@
         "deploy:common": "cd common && docker compose up --build --remove-orphans",
         "deploy:frontend": "cd frontend && docker compose up --build --remove-orphans",
         "deploy:backend": "cd backend && docker compose up --build --remove-orphans -d",
-        "deploy": "npm run deploy:common && npm run deploy:frontend && npm run deploy:backend"
+        "deploy": "npm run deploy:common && npm run deploy:frontend && npm run deploy:backend && npm run executor:start",
+        "executor:start": "pm2 start nsmExecHandle.mjs -i 1",
+        "executor:stop": "pm2 stop nsmExecHandle.mjs"
     },
     "dependencies": {
         "concurrently": "^9.1.0"
