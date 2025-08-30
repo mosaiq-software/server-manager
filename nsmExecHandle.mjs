@@ -68,7 +68,25 @@ const handleDeployer = async (rawInput) => {
             return;
         }
 
-        const child = child_process.spawn('bash', ['-c', `eval "${command.replace(/"/g, '\\"')}"`], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const child = child_process.spawn(command, {
+            shell: true,
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+
+        console.log("this child was started by the command", child.pid, child.spawnargs);
+
+        let timeoutId;
+        if (timeout) {
+            timeoutId = setTimeout(() => {
+                console.log(`Command timed out after ${timeout}ms`);
+                fs.appendFile(workingOutFilePath, `\n\n--- Command timed out after ${timeout}ms ---\n`, (err) => {
+                    if (err) {
+                        console.error("Failed to write timeout message to working output file:", err);
+                    }
+                });
+                child.kill();
+            }, timeout);
+        }
 
         child.stdout.on('data', (data) => {
             fs.appendFile(workingOutFilePath, data.toString(), (err) => {
@@ -92,12 +110,6 @@ const handleDeployer = async (rawInput) => {
                 console.error("Failed to rename working output file:", err);
             });
         });
-
-        if (timeout) {
-            setTimeout(() => {
-                child.kill();
-            }, timeout);
-        }
     }
 
 }

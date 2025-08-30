@@ -6,6 +6,10 @@ COPY . /app
 
 WORKDIR /app
 
+RUN npm install -g tsx
+
 RUN npm ci
 
-CMD ["npm", "run", "start:prod"]
+RUN npm run common:prod
+
+CMD ["tsx", "src/index.ts"]

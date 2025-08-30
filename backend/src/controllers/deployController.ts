@@ -1,9 +1,10 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModel } from '@/persistence/projectPersistence';
-import { DEFAULT_TIMEOUT, execSafe, execSafeOnHostWithOutput, HostExecMessage, sendMessageToNsmExecutor } from '@/utils/execUtils';
+import { execSafe, HostExecMessage, sendMessageToNsmExecutor } from '@/utils/execUtils';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
 import {existsSync, readFileSync, truncateSync} from "fs";
 
+const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
     let logId: string | undefined;
@@ -171,9 +172,10 @@ const runDeploymentCommand = async (projectId: string, runCommand: string, timeo
         const outFilePath = `${process.env.NSM_OUTPUT_PATH}/${projectId}/${messageInstanceId}.out`;
         const startTime = Date.now();
         const maxEndTime = startTime + timeoutms + 2000;
-        while (existsSync(outWorkingFilePath)) {
+        while (true) {
             const workingContents = readFileSync(outWorkingFilePath, 'utf-8');
             if(workingContents.length > 0){
+                console.log('Streaming output from executor...');
                 truncateSync(outWorkingFilePath, 0);
                 await updateDeploymentLogModel(logId, {log: workingContents});
             }
@@ -182,10 +184,15 @@ const runDeploymentCommand = async (projectId: string, runCommand: string, timeo
                 console.warn('Timed out waiting for output file from executor');
                 break;
             }
+            if(!existsSync(outWorkingFilePath)){
+                console.log('Output file from executor no longer exists');
+                break;
+            }
         }
+        console.log('Finalizing output file from executor...');
         const outFileContents = readFileSync(outFilePath, 'utf-8');
         await updateDeploymentLogModel(logId, {log: outFileContents});
-
+        console.log('Deployment command output complete.');
         // Clean up the output
         const cleanupMessage: HostExecMessage = {
             projectId,

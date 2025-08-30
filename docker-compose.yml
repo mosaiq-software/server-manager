@@ -1,0 +1,40 @@
+services:
+    common-job:
+        build: ./common/
+        restart: no
+    ui-job:
+        build: ./frontend/
+        restart: no
+        depends_on:
+            - common-job
+        volumes:
+            - type: bind
+              source: ${NSMUSEONLY_WEB_1}
+              target: /www
+        env_file:
+            - .env
+    api:
+        build: ./backend/
+        depends_on:
+            - common-job
+        ports:
+            - '${NSMUSEONLY_PORT_1}:3001'
+        restart: always
+        healthcheck:
+            test: [ "CMD", "curl", "-f", "http://0.0.0.0:${NSMUSEONLY_PORT_1}/" ]
+            interval: 15s
+            timeout: 10s
+            retries: 5
+            start_period: 30s
+        volumes:
+            - type: bind
+              source: ${NSMUSEONLY_DB_1}
+              target: ${DATABASE_DIR}
+            - type: bind
+              source: ${WEBAPPS_PATH}
+              target: ${WEBAPPS_PATH}
+            - type: bind
+              source: ${NSM_PIPE_PATH}
+              target: ${NSM_PIPE_PATH}
+        env_file:
+            - .env

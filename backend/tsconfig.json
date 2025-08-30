@@ -16,6 +16,6 @@
         "declaration": true,
         "declarationMap": true
     },
-    "include": ["src/**/*.ts", "../nsmExecHandle.ts"],
+    "include": ["src/**/*.ts"],
     "exclude": ["node_modules"]
 }

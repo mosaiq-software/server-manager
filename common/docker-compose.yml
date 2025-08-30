@@ -1,4 +1,0 @@
-services:
-    nsm-common-job:
-        build: .
-        restart: no

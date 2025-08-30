@@ -3,13 +3,9 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 const Dotenv = require('dotenv-webpack');
 
-module.exports= () => {
-    // path is at ../trz-common/.env
-    const envPath = path.resolve(__dirname, '.env');
-    const envVars = require('dotenv').config({ path: envPath }).parsed || {};
-
+module.exports = () => {
     return {
-        mode: "development", 
+        mode: "development",
         entry: path.resolve(__dirname, "src/index.tsx"),
         output: {
             path: path.resolve(__dirname, "public"),
@@ -24,18 +20,18 @@ module.exports= () => {
         },
         devtool: 'source-map',
         resolve: {
-            extensions: ['.ts','.tsx','.js'],
+            extensions: ['.ts', '.tsx', '.js'],
             modules: ['node_modules'],
             alias: {
                 '@': path.resolve(__dirname, 'src/'),
             }
         },
-        module:{
+        module: {
             rules: [
                 {
                     test: /\.(ts|tsx)$/,
                     exclude: /node_modules/,
-                    use:  'babel-loader'
+                    use: 'babel-loader'
                 },
                 {
                     test: /\.css$/i,
@@ -52,7 +48,8 @@ module.exports= () => {
                 template: path.resolve(__dirname, 'src/index.html')
             }),
             new Dotenv({
-                path: envPath
+                systemvars: true,
+                // path: '../.env'
             })
         ],
         optimization: {

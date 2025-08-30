@@ -17,10 +17,7 @@
         "common:prod": "concurrently \"cd backend && npm run common:prod\" \"cd frontend && npm run common:prod\"",
         "common:dev": "concurrently \"cd backend && npm run common:dev\" \"cd frontend && npm run common:dev\"",
         "postinstall": "cd common && npm i && npm run build && cd .. && concurrently \"cd backend && npm i\" \"cd frontend && npm i\"",
-        "deploy:common": "cd common && docker compose up --build --remove-orphans",
-        "deploy:frontend": "cd frontend && docker compose up --build --remove-orphans",
-        "deploy:backend": "cd backend && docker compose up --build --remove-orphans -d",
-        "deploy": "npm run deploy:common && npm run deploy:frontend && npm run deploy:backend && npm run executor:start",
+        "deploy": "npm run executor:start; docker compose -p nsm up --build -d",
         "executor:start": "pm2 start nsmExecHandle.mjs -i 1",
         "executor:stop": "pm2 stop nsmExecHandle.mjs"
     },
