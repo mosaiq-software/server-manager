@@ -8,8 +8,8 @@ import { apiGet, apiPost } from '@/utils/api';
 import { EditableTextInput } from '@/components/EditableTextInput';
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
-import { T } from 'node_modules/react-router/dist/development/index-react-server-client-DXb0OgpJ.mjs';
 import { assembleDotenv } from '@mosaiq/nsm-common/secretUtil';
+import { NginxEditor } from '@/components/NginxEditor';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -83,8 +83,8 @@ const ProjectConfigPage = () => {
                 />
             </Group>
             <Divider my="sm" />
-            <Title order={5}>Environment Variables</Title>
             <Stack>
+                <Title order={5}>Environment Variables</Title>
                 <Table>
                     <Table.Thead>
                         <Table.Th>Env Variable Name</Table.Th>
@@ -113,6 +113,12 @@ const ProjectConfigPage = () => {
                     })}
                 </Table>
             </Stack>
+            <Divider my="sm" />
+            <Title order={5}>Domain Configuration</Title>
+            <NginxEditor
+                current={project.nginxConfig || { servers: [] }}
+                onSave={(config) => projectCtx.update(project.id, { nginxConfig: config })}
+            />
         </Stack>
     );
 };

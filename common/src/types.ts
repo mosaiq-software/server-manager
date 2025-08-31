@@ -11,6 +11,7 @@ export interface Project {
     deployLogs?: DeployLogHeader[];
     timeout?: number;
     dirtyConfig?: boolean;
+    nginxConfig?: ProjectNginxConfig;
 }
 
 export interface Secret {
@@ -94,10 +95,11 @@ export interface CustomConfigLocation {
     path: string;
     content: string;
 }
+export type ConfigLocation = StaticConfigLocation | ProxyConfigLocation | RedirectConfigLocation | CustomConfigLocation;
 export interface ServerConfig {
     domain: string;
     wildcardSubdomain: boolean;
-    locations: (StaticConfigLocation | ProxyConfigLocation | RedirectConfigLocation | CustomConfigLocation)[];
+    locations: ConfigLocation[];
 }
 
 export interface ProjectNginxConfig {
