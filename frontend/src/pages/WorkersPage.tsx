@@ -1,4 +1,4 @@
-import { Button, Center, Group, Loader, Modal, PasswordInput, Stack, Table, Text, TextInput, Title } from '@mantine/core';
+import { Button, ButtonGroup, Center, Group, Loader, Modal, PasswordInput, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import React, { useEffect, useState } from 'react';
 import { EditableTextInput } from '@/components/EditableTextInput';
@@ -167,8 +167,20 @@ const WorkersPage = () => {
                                 <WorkerStatus address={worker.address} />
                             </Table.Td>
                             <Table.Td>
-                                <Button onClick={() => setModal(`delete-${worker.workerId}`)}>Remove</Button>
-                                <Button onClick={() => setModal(`reset-key-${worker.workerId}`)}>Reset Key</Button>
+                                <ButtonGroup>
+                                    <Button
+                                        onClick={() => setModal(`delete-${worker.workerId}`)}
+                                        variant="outline"
+                                    >
+                                        Remove
+                                    </Button>
+                                    <Button
+                                        onClick={() => setModal(`reset-key-${worker.workerId}`)}
+                                        variant="outline"
+                                    >
+                                        Reset Key
+                                    </Button>
+                                </ButtonGroup>
                             </Table.Td>
                         </Table.Tr>
                     ))}
