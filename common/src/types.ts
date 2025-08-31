@@ -12,6 +12,8 @@ export interface Project {
     timeout?: number;
     dirtyConfig?: boolean;
     nginxConfig?: ProjectNginxConfig;
+    dynamicEnvVariables?: DynamicEnvVariable[];
+    workerNodeId?: string;
 }
 
 export interface Secret {
@@ -71,6 +73,8 @@ export enum NginxConfigLocationType {
 }
 
 export interface StaticConfigLocation {
+    locationId: string;
+    index: number;
     type: NginxConfigLocationType.STATIC;
     path: string;
     serveDir: string;
@@ -78,6 +82,8 @@ export interface StaticConfigLocation {
     explicitCors: boolean;
 }
 export interface ProxyConfigLocation {
+    locationId: string;
+    index: number;
     type: NginxConfigLocationType.PROXY;
     path: string;
     proxyPass: string;
@@ -86,17 +92,23 @@ export interface ProxyConfigLocation {
     maxClientBodySizeMb?: number;
 }
 export interface RedirectConfigLocation {
+    locationId: string;
+    index: number;
     type: NginxConfigLocationType.REDIRECT;
     path: string;
     target: string;
 }
 export interface CustomConfigLocation {
+    locationId: string;
+    index: number;
     type: NginxConfigLocationType.CUSTOM;
     path: string;
     content: string;
 }
 export type ConfigLocation = StaticConfigLocation | ProxyConfigLocation | RedirectConfigLocation | CustomConfigLocation;
 export interface ServerConfig {
+    serverId: string;
+    index: number;
     domain: string;
     wildcardSubdomain: boolean;
     locations: ConfigLocation[];
@@ -104,4 +116,10 @@ export interface ServerConfig {
 
 export interface ProjectNginxConfig {
     servers: ServerConfig[];
+}
+
+export interface DynamicEnvVariable {
+    parent: string;
+    field: string;
+    placeholder?: string;
 }

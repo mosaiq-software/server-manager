@@ -10,6 +10,9 @@ export interface ProjectModelType {
     allowCICD: boolean;
     timeout?: number;
     dirtyConfig?: boolean;
+    nginxConfigJson: string;
+    dynamicVariablesJson: string;
+    workerNodeId?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -27,6 +30,9 @@ ProjectModel.init(
         allowCICD: DataTypes.BOOLEAN,
         timeout: DataTypes.NUMBER,
         dirtyConfig: DataTypes.BOOLEAN,
+        nginxConfigJson: DataTypes.TEXT,
+        dynamicVariablesJson: DataTypes.TEXT,
+        workerNodeId: DataTypes.STRING,
     },
     { sequelize }
 );

@@ -19,6 +19,10 @@ export const getAllWorkerNodesModel = async (): Promise<WorkerNode[]> => {
     return (await WorkerNodeModel.findAll())?.map((sec) => sec.toJSON()) as WorkerNode[];
 };
 
+export const getWorkerNodeByIdModel = async (workerId: string): Promise<WorkerNode | null> => {
+    return (await WorkerNodeModel.findByPk(workerId))?.toJSON() as WorkerNode | null;
+};
+
 export const createWorkerNodeModel = async (wn: WorkerNode) => {
     return await WorkerNodeModel.create({ ...wn });
 };

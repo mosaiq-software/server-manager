@@ -1,25 +1,34 @@
-import { ActionIcon, Button, Group, Stack, Title, Text, Switch, Textarea, TextInput, Menu, Tooltip, Fieldset, Space, NumberInput, Select } from '@mantine/core';
+import { ActionIcon, Button, Group, Stack, Title, Text, Switch, Textarea, TextInput, Menu, Tooltip, Fieldset, Space, NumberInput, Select, Chip, Badge, Divider } from '@mantine/core';
 import { ConfigLocation, NginxConfigLocationType, Project, ProjectNginxConfig } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
-import { MdOutlineArrowCircleRight, MdOutlineCode, MdOutlineComputer, MdOutlineDelete, MdOutlineHardware, MdOutlineHttp, MdOutlineLink, MdOutlineNewspaper, MdOutlinePages, MdOutlineTextFields } from 'react-icons/md';
+import { MdOutlineArrowCircleRight, MdOutlineCode, MdOutlineComputer, MdOutlineDelete, MdOutlineDns, MdOutlineHardware, MdOutlineHttp, MdOutlineLink, MdOutlineNewspaper, MdOutlinePages, MdOutlineStorage, MdOutlineTextFields, MdOutlineWeb } from 'react-icons/md';
 
 interface NginxEditorProps {
     current: ProjectNginxConfig;
     onSave: (config: ProjectNginxConfig) => void;
 }
 export const NginxEditor = (props: NginxEditorProps) => {
-    const [config, setConfig] = useState<ProjectNginxConfig>(props.current);
+    const [config, setConfig] = useState<ProjectNginxConfig>(JSON.parse(JSON.stringify(props.current)));
 
     useEffect(() => {
-        setConfig(props.current);
+        const json = JSON.stringify(props.current);
+        const curr = JSON.stringify(config);
+        if (json !== curr) setConfig(JSON.parse(json));
     }, [props.current]);
 
-    const handleSave = () => {
-        props.onSave(config);
-    };
+    useEffect(() => {
+        const oldConfig = JSON.stringify(props.current);
+        const newConfig = JSON.stringify(config);
+        if (oldConfig !== newConfig) {
+            props.onSave(JSON.parse(newConfig));
+        }
+    }, [config]);
 
     const handleAddServer = () => {
+        const maxIndex = config.servers.reduce((max, srv) => (srv.index > max ? srv.index : max), 0);
         const newServer: ProjectNginxConfig['servers'][number] = {
+            serverId: crypto.randomUUID(),
+            index: maxIndex + 1,
             domain: '',
             wildcardSubdomain: false,
             locations: [],
@@ -29,9 +38,12 @@ export const NginxEditor = (props: NginxEditorProps) => {
 
     const handleAddLocation = (serverIndex: number, locationType: NginxConfigLocationType) => {
         let newLocation: ConfigLocation;
+        const maxIndex = config.servers[serverIndex].locations.reduce((max, loc) => (loc.index > max ? loc.index : max), 0);
         switch (locationType) {
             case NginxConfigLocationType.STATIC:
                 newLocation = {
+                    locationId: crypto.randomUUID(),
+                    index: maxIndex + 1,
                     type: NginxConfigLocationType.STATIC,
                     path: '/',
                     serveDir: '',
@@ -41,6 +53,8 @@ export const NginxEditor = (props: NginxEditorProps) => {
                 break;
             case NginxConfigLocationType.PROXY:
                 newLocation = {
+                    locationId: crypto.randomUUID(),
+                    index: maxIndex + 1,
                     type: NginxConfigLocationType.PROXY,
                     path: '/',
                     proxyPass: '',
@@ -51,6 +65,8 @@ export const NginxEditor = (props: NginxEditorProps) => {
                 break;
             case NginxConfigLocationType.REDIRECT:
                 newLocation = {
+                    locationId: crypto.randomUUID(),
+                    index: maxIndex + 1,
                     type: NginxConfigLocationType.REDIRECT,
                     path: '/',
                     target: '',
@@ -58,6 +74,8 @@ export const NginxEditor = (props: NginxEditorProps) => {
                 break;
             case NginxConfigLocationType.CUSTOM:
                 newLocation = {
+                    locationId: crypto.randomUUID(),
+                    index: maxIndex + 1,
                     type: NginxConfigLocationType.CUSTOM,
                     path: '/',
                     content: '',
@@ -69,34 +87,36 @@ export const NginxEditor = (props: NginxEditorProps) => {
         }));
     };
 
-    const handleRemoveLocation = (serverIndex: number, locationIndex: number) => {
+    const handleRemoveLocation = (serverId: string, locationId: string) => {
         setConfig((prevConfig) => ({
             ...prevConfig,
-            servers: prevConfig.servers.map((srv, idx) => (idx === serverIndex ? { ...srv, locations: srv.locations.filter((_, locIdx) => locIdx !== locationIndex) } : srv)),
+            servers: prevConfig.servers.map((srv) => (srv.serverId === serverId ? { ...srv, locations: srv.locations.filter((loc) => loc.locationId !== locationId) } : srv)),
         }));
     };
 
-    const handleRemoveServer = (serverIndex: number) => {
+    const handleRemoveServer = (serverId: string) => {
         setConfig((prevConfig) => ({
             ...prevConfig,
-            servers: prevConfig.servers.filter((_, idx) => idx !== serverIndex),
+            servers: prevConfig.servers.filter((srv) => srv.serverId !== serverId),
         }));
     };
 
     const MenuItems = {
         [NginxConfigLocationType.CUSTOM]: { icon: MdOutlineCode, desc: 'Custom location block', title: 'Custom NGINX Block' },
         [NginxConfigLocationType.REDIRECT]: { icon: MdOutlineLink, desc: 'Redirect requests to another URL', title: 'Redirect Link' },
-        [NginxConfigLocationType.PROXY]: { icon: MdOutlineHttp, desc: 'Proxy requests to another server', title: 'API Service' },
-        [NginxConfigLocationType.STATIC]: { icon: MdOutlineNewspaper, desc: 'Serve static files from a directory', title: 'Static Page' },
+        [NginxConfigLocationType.PROXY]: { icon: MdOutlineDns, desc: 'Proxy requests to another server', title: 'API Service' },
+        [NginxConfigLocationType.STATIC]: { icon: MdOutlineWeb, desc: 'Serve static files from a directory', title: 'Static Page' },
     };
 
     const duplicateDomain = config.servers.map((srv) => srv.domain).find((domain, idx, arr) => arr.indexOf(domain) !== idx);
     return (
         <Stack>
+            <Title order={5}>Domain Configuration</Title>
             {config.servers.map((server, serverIndex) => {
                 const duplicatePath = server.locations.map((loc) => loc.path).find((path, idx, arr) => arr.indexOf(path) !== idx);
                 return (
-                    <Fieldset key={serverIndex}>
+                    <Fieldset key={server.serverId}>
+                        <Title order={5}>{`Domain ${String.fromCharCode(64 + server.index)}`}</Title>
                         <Group
                             align="flex-end"
                             gap="xl"
@@ -113,9 +133,9 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                 }}
                                 error={duplicateDomain === server.domain ? 'Duplicate Domain' : undefined}
                             />
-                            <Tooltip label="Remove Server Block">
+                            <Tooltip label="Remove Domain Configs">
                                 <ActionIcon
-                                    onClick={() => handleRemoveServer(serverIndex)}
+                                    onClick={() => handleRemoveServer(server.serverId)}
                                     variant="subtle"
                                     color="red"
                                     size={'input-sm'}
@@ -125,7 +145,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                             </Tooltip>
                             <Switch
                                 label="Wildcard"
-                                description={`Route all subdomains to this server? ( *.${server.domain} ==> ${server.domain} )`}
+                                description={`Route all subdomains to this server? ( *.${server.domain} -> ${server.domain} )`}
                                 checked={server.wildcardSubdomain}
                                 onChange={(event) => {
                                     const newServers = [...config.servers];
@@ -143,16 +163,16 @@ export const NginxEditor = (props: NginxEditorProps) => {
                         >
                             {server.locations.map((location, locationIndex) => {
                                 return (
-                                    <Fieldset key={locationIndex}>
+                                    <Fieldset key={location.locationId}>
                                         <Stack
                                             w="300px"
                                             gap="xs"
                                         >
                                             <Group>
-                                                <Title order={6}>{MenuItems[location.type].title}</Title>
+                                                <Title order={6}>{`${String.fromCharCode(64 + server.index)}${location.index} : ${MenuItems[location.type].title}`}</Title>
                                                 <Tooltip label={`Remove ${MenuItems[location.type].title}`}>
                                                     <ActionIcon
-                                                        onClick={() => handleRemoveLocation(serverIndex, locationIndex)}
+                                                        onClick={() => handleRemoveLocation(server.serverId, location.locationId)}
                                                         variant="subtle"
                                                         color="red"
                                                         size={'input-xs'}
@@ -165,11 +185,13 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                                 location={location}
                                                 domain={server.domain}
                                                 onChange={(updatedLocation) => {
-                                                    const newLocations = [...server.locations];
-                                                    newLocations[locationIndex] = updatedLocation;
-                                                    const newServers = [...config.servers];
-                                                    newServers[serverIndex].locations = newLocations;
-                                                    setConfig({ ...config, servers: newServers });
+                                                    setConfig((prevConfig) => {
+                                                        const newLocations = [...prevConfig.servers[serverIndex].locations];
+                                                        newLocations[locationIndex] = updatedLocation;
+                                                        const newServers = [...prevConfig.servers];
+                                                        newServers[serverIndex].locations = newLocations;
+                                                        return { ...prevConfig, servers: newServers };
+                                                    });
                                                 }}
                                                 duplicatePath={duplicatePath === location.path}
                                             />
@@ -215,12 +237,6 @@ export const NginxEditor = (props: NginxEditorProps) => {
                 w="min-content"
             >
                 Add a Domain
-            </Button>
-            <Button
-                onClick={handleSave}
-                w="min-content"
-            >
-                Save Configuration
             </Button>
         </Stack>
     );
@@ -351,7 +367,7 @@ const RenderLocation = (props: RenderLocationProps) => {
                     placeholder="/"
                     description={props.domain && props.location.path.startsWith('/') ? `https://${props.domain}${props.location.path}` : ''}
                     onChange={(e) => props.location.type === NginxConfigLocationType.CUSTOM && props.onChange({ ...props.location, path: e.currentTarget.value })}
-                    error={props.duplicatePath}
+                    error={props.duplicatePath ? 'Duplicate Path' : undefined}
                 />
                 <Textarea
                     required
@@ -360,7 +376,6 @@ const RenderLocation = (props: RenderLocationProps) => {
                     description="Location scope directives"
                     placeholder={`proxy_pass http://localhost:3000;`}
                     onChange={(e) => props.location.type === NginxConfigLocationType.CUSTOM && props.onChange({ ...props.location, content: e.currentTarget.value })}
-                    error={props.duplicatePath ? 'Duplicate Path' : undefined}
                 />
             </>
         );

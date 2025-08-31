@@ -3,6 +3,7 @@ import { getProjectByIdModel, updateProjectModelNoDirty } from '@/persistence/pr
 import { DeploymentState } from '@mosaiq/nsm-common/types';
 import { WORKER_BODY, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { getDotenvForProject } from './secretController';
+import { getWorkerNodeById } from './workerNodeController';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
@@ -16,7 +17,11 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             return undefined;
         }
 
-        logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING);
+        if (!project.workerNodeId) {
+            throw new Error('No worker node assigned to project');
+        }
+
+        logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId);
 
         const dotenv = await getDotenvForProject(project.id);
 
@@ -31,7 +36,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             timeout: project.timeout || DEFAULT_TIMEOUT,
             logId: logId,
         };
-        await workerNodePost(WORKER_ROUTES.POST_DEPLOY_PROJECT, body);
+        await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, body);
     } catch (error: any) {
         console.error('Error deploying project:', error);
         if (logId) {
@@ -41,13 +46,16 @@ export const deployProject = async (projectId: string): Promise<string | undefin
     return logId;
 };
 
-async function workerNodePost<T extends WORKER_ROUTES>(ep: T, body: WORKER_BODY[T]) {
+async function workerNodePost<T extends WORKER_ROUTES>(wnId: string, ep: T, body: WORKER_BODY[T]) {
     //TODO handle distributing calls across to other worker nodes?
-    const url = `${process.env.WORKER_NODE_URL}${ep}`;
+    const wn = await getWorkerNodeById(wnId);
+    if (!wn) throw new Error(`WorkerNode with id ${wnId} not found`);
+    const url = `${wn.address}${ep}`;
     const res = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            Authorization: `${wn.authToken}`,
         },
         body: JSON.stringify(body),
     });

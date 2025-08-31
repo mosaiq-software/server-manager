@@ -1,10 +1,15 @@
 import { WorkerNode } from '@mosaiq/nsm-common/types';
-import { getAllWorkerNodesModel, createWorkerNodeModel, updateWorkerNodeModel, deleteWorkerNodeModel } from '@/persistence/workerPersistence';
+import { getAllWorkerNodesModel, createWorkerNodeModel, updateWorkerNodeModel, deleteWorkerNodeModel, getWorkerNodeByIdModel } from '@/persistence/workerPersistence';
 import { generate32CharKey } from './projectController';
 
 export const getAllWorkerNodes = async (): Promise<WorkerNode[]> => {
     const workerNodes = await getAllWorkerNodesModel();
     return workerNodes;
+};
+
+export const getWorkerNodeById = async (workerId: string): Promise<WorkerNode | undefined> => {
+    const workerNode = await getWorkerNodeByIdModel(workerId);
+    return workerNode ?? undefined;
 };
 
 export const createWorkerNode = async (workerId: string, address: string): Promise<WorkerNode> => {

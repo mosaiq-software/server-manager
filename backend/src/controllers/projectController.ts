@@ -53,6 +53,8 @@ export const createProject = async (project: Project) => {
             state: DeploymentState.READY,
             allowCICD: !!project.allowCICD,
             dirtyConfig: false,
+            nginxConfigJson: JSON.stringify({}),
+            dynamicVariablesJson: JSON.stringify([]),
         };
         await createProjectModel(project.id, newProject);
 
@@ -66,7 +68,11 @@ export const createProject = async (project: Project) => {
 
 export const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
-        await updateProjectModelNoDirty(id, { dirtyConfig: true, ...updates });
+        const nginxConfigJson = updates.nginxConfig ? JSON.stringify(updates.nginxConfig) : undefined;
+        const dynamicVariablesJson = updates.dynamicEnvVariables ? JSON.stringify(updates.dynamicEnvVariables) : undefined;
+        delete updates.nginxConfig;
+        delete updates.dynamicEnvVariables;
+        await updateProjectModelNoDirty(id, { dirtyConfig: true, ...updates, nginxConfigJson, dynamicVariablesJson });
     } catch (error) {
         console.error('Error updating project:', error);
         return null;
