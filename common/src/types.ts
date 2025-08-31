@@ -56,8 +56,44 @@ export interface DeploymentLogUpdate {
     log: string;
 }
 
-export interface WorkerNode {
-    workerId: string;
-    workerUrl: string;
-    authToken: string;
+export enum NginxConfigLocationType {
+    STATIC = 'static',
+    PROXY = 'proxy',
+    REDIRECT = 'redirect',
+    CUSTOM = 'custom',
+}
+
+export interface StaticConfigLocation {
+    type: NginxConfigLocationType.STATIC;
+    path: string;
+    serveDir: string;
+    spa: boolean;
+    explicitCors: boolean;
+}
+export interface ProxyConfigLocation {
+    type: NginxConfigLocationType.PROXY;
+    path: string;
+    proxyPass: string;
+    websocketSupport: boolean;
+    timeout?: number;
+    maxClientBodySizeMb?: string;
+}
+export interface RedirectConfigLocation {
+    type: NginxConfigLocationType.REDIRECT;
+    path: string;
+    target: string;
+}
+export interface CustomConfigLocation {
+    type: NginxConfigLocationType.CUSTOM;
+    path: string;
+    content: string;
+}
+export interface ServerConfig {
+    domain: string;
+    wildcardSubdomain: boolean;
+    locations: (StaticConfigLocation | ProxyConfigLocation | RedirectConfigLocation | CustomConfigLocation)[];
+}
+
+export interface ProjectNginxConfig {
+    servers: ServerConfig[];
 }
