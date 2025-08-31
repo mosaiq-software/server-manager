@@ -1,5 +1,5 @@
 import { createProject, getAllProjects, getProject, resetDeploymentKey, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
-import { deployProject } from '@/controllers/deployController';
+import { deployProject, updateDeploymentLog } from '@/controllers/deployController';
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 import express from 'express';
 import { DeploymentState } from '@mosaiq/nsm-common/types';

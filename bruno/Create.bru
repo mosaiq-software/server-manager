@@ -1,0 +1,19 @@
+meta {
+  name: Create
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{URL}}/project/create
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "id": "test",
+      "repoOwner": "camo",
+      "repoName": "Camo651"
+  }
+}

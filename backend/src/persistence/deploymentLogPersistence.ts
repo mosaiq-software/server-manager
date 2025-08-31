@@ -1,6 +1,9 @@
 import { sequelize } from '@/utils/dbHelper';
 import { DeploymentLog, DeploymentState } from '@mosaiq/nsm-common/types';
+import { Mutex } from 'async-mutex';
 import { DataTypes, Model } from 'sequelize';
+
+const mutex = new Mutex();
 
 class DeploymentLogModel extends Model {}
 DeploymentLogModel.init(
@@ -31,15 +34,18 @@ export const createDeploymentLogModel = async (projectId: string, log: string, s
 };
 
 export const updateDeploymentLogModel = async (id: string, data: Partial<DeploymentLog>) => {
-    const log = await getDeploymentLogByIdModel(id);
-    if (!log) throw new Error('Log not found');
-    return await DeploymentLogModel.update(
-        {
-            ...data,
-            log: data.log ? `${log.log}\n${data.log}` : log.log,
-        },
-        { where: { id } }
-    );
+    await mutex.runExclusive(async () => {
+        const log = await getDeploymentLogByIdModel(id);
+        if (!log) throw new Error('Log not found');
+        console.log('Updating log', id, data);
+        await DeploymentLogModel.update(
+            {
+                ...data,
+                log: data.log ? `${log.log ?? ''}${data.log}` : undefined,
+            },
+            { where: { id } }
+        );
+    });
 };
 
 export const deleteDeploymentLogModel = async (id: string) => {

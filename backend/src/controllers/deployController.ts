@@ -12,7 +12,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         const project = await getProjectByIdModel(projectId);
         if (!project) throw new Error('Project not found');
 
-        logId = await createDeploymentLogModel(projectId, 'Starting deployment...', DeploymentState.DEPLOYING);
+        logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING);
 
         const dotenv = await getDotenvForProject(project.id);
 
@@ -31,7 +31,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
     } catch (error: any) {
         console.error('Error deploying project:', error);
         if (logId) {
-            await updateDeploymentLogModel(logId, { log: 'Error deploying project: ' + error.message, status: DeploymentState.FAILED });
+            await updateDeploymentLogModel(logId, { log: `Error deploying project: ${error.message}\n`, status: DeploymentState.FAILED });
         }
     }
     return logId;
@@ -52,3 +52,7 @@ async function workerNodePost<T extends WORKER_ROUTES>(ep: T, body: WORKER_BODY[
         throw new Error(`Worker error: ${res.status} - ${text}`);
     }
 }
+
+export const updateDeploymentLog = async (logId: string, status: DeploymentState, logText: string) => {
+    return updateDeploymentLogModel(logId, { status, log: logText });
+};
