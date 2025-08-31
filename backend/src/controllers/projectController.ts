@@ -1,28 +1,30 @@
 import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModel } from '@/persistence/projectPersistence';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
-import { getReposEnvFiles } from './deployController';
-import { applyDotenv, getAllSecretEnvsForProject } from './secretController';
+import { applyDotenv, getAllSecretsForProject } from './secretController';
 import { getAllDeploymentLogs } from '@/persistence/deploymentLogPersistence';
+import { getRepoData } from '@/utils/repositoryUtils';
 
 export const getProject = async (projectId: string) => {
     const projectData = await getProjectByIdModel(projectId);
     if (!projectData) return undefined;
 
-    const allSecretEnvs = await getAllSecretEnvsForProject(projectId);
-    const deployLogs = (await getAllDeploymentLogs(projectId)).map(log => ({
-        ...log, log: ''
-    })).sort((a, b) => (new Date(b.createdAt || '')).getTime() - (new Date(a.createdAt || '')).getTime());
+    const secrets = await getAllSecretsForProject(projectId);
+    const deployLogs = (await getAllDeploymentLogs(projectId))
+        .map((log) => ({
+            ...log,
+            log: '',
+        }))
+        .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
 
     const project: Project = {
         id: projectData.id,
         repoOwner: projectData.repoOwner,
         repoName: projectData.repoName,
-        runCommand: projectData.runCommand,
         deploymentKey: projectData.deploymentKey,
         state: projectData.state,
         createdAt: projectData.createdAt,
         updatedAt: projectData.updatedAt,
-        envs: allSecretEnvs,
+        secrets: secrets,
         deployLogs: deployLogs,
     };
 
@@ -33,7 +35,7 @@ export const getAllProjects = async (): Promise<Project[]> => {
     const projectsData = await getAllProjectsModel();
     const projects = [];
     for (const projectData of projectsData) {
-        projects.push(await getProject(projectData.id) as Project);
+        projects.push((await getProject(projectData.id)) as Project);
     }
     return projects;
 };
@@ -44,17 +46,15 @@ export const createProject = async (project: Project) => {
             id: project.id,
             repoOwner: project.repoOwner,
             repoName: project.repoName,
-            runCommand: project.runCommand,
             deploymentKey: generateDeploymentKey(),
             state: DeploymentState.READY,
             allowCICD: !!project.allowCICD,
+            dirtyConfig: false,
         };
         await createProjectModel(project.id, newProject);
 
-        const envFiles = await getReposEnvFiles(project.id);
-        for (const envFile of envFiles) {
-            applyDotenv(envFile.contents, project.id, envFile.env);
-        }
+        const repoData = await getRepoData(project.id, project.repoOwner, project.repoName);
+        applyDotenv(repoData.dotenv, project.id);
     } catch (error) {
         console.error('Error creating project:', error);
         return null;
@@ -73,7 +73,7 @@ export const updateProject = async (id: string, updates: Partial<Project>) => {
 export const verifyDeploymentKey = async (projectId: string, key: string, fromWeb: boolean): Promise<boolean> => {
     const project = await getProjectByIdModel(projectId);
     if (!project) return false;
-    if(!fromWeb && !project.allowCICD) return false;
+    if (!fromWeb && !project.allowCICD) return false;
     return project.deploymentKey === key;
 };
 

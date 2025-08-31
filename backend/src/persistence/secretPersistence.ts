@@ -9,10 +9,6 @@ SecretModel.init(
             type: DataTypes.STRING,
             primaryKey: true,
         },
-        env: {
-            type: DataTypes.STRING,
-            primaryKey: true,
-        },
         secretName: {
             type: DataTypes.STRING,
             primaryKey: true,
@@ -35,15 +31,15 @@ export const createSecretModel = async (sec: Secret) => {
     return await SecretModel.create({ ...sec });
 };
 
-export const updateSecretModel = async (projectId: string, env: string, secretName: string, newValue: string) => {
+export const updateSecretModel = async (projectId: string, secretName: string, newValue: string) => {
     return await SecretModel.update(
         {
             secretValue: newValue,
         },
-        { where: { projectId, env, secretName } }
+        { where: { projectId, secretName } }
     );
 };
 
-export const deleteAllSecretsForProjectEnvModel = async (projectId: string, env: string) => {
-    return await SecretModel.destroy({ where: { projectId, env } });
+export const deleteAllSecretsForProjectEnvModel = async (projectId: string) => {
+    return await SecretModel.destroy({ where: { projectId } });
 };

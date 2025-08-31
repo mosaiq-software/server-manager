@@ -1,7 +1,6 @@
 import { createProject, getAllProjects, getProject, resetDeploymentKey, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
 import { deployProject } from '@/controllers/deployController';
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { verify } from 'crypto';
 import express from 'express';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
 import { getDeploymentLogByIdModel } from '@/persistence/deploymentLogPersistence';
@@ -11,7 +10,7 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
     try {
-        res.status(200).send('Hello from the API');
+        res.status(200).send('Hello from the NSM API');
     } catch (error) {
         console.error(error);
         res.status(500).send('Internal server error');
@@ -120,7 +119,7 @@ router.get(API_ROUTES.GET_DEPLOY_LOG, async (req, res) => {
 router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_PROJECT];
     try {
-        if (!body || !body.id || !body.repoOwner || !body.repoName || !body.runCommand) {
+        if (!body || !body.id || !body.repoOwner || !body.repoName) {
             res.status(400).send('Invalid request body');
             return;
         }
@@ -170,14 +169,30 @@ router.post(API_ROUTES.POST_UPDATE_ENV_VAR, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_UPDATE_ENV_VAR];
     const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_ENV_VAR];
     try {
-        if (!params.projectId || !body.envName || !body.varName) {
+        if (!params.projectId || !body.varName) {
             res.status(400).send('Invalid request');
             return;
         }
-        await updateEnvironmentVariable(params.projectId, body.envName, body.varName, body.value);
+        await updateEnvironmentVariable(params.projectId, body.varName, body.value);
         res.status(200).send('Environment variable updated');
     } catch (e: any) {
         console.error('Error updating environment variable', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.post(API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE, async (req, res) => {
+    const body = req.body as API_BODY[API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE];
+    try {
+        if (!body || !body.logId || !body.status) {
+            res.status(400).send('Invalid request body');
+            return;
+        }
+        await updateDeploymentLog(body.logId, body.status, body.log);
+        const response: API_RETURN[API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE] = undefined;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error updating deployment log', e);
         res.status(500).send('Internal server error');
     }
 });

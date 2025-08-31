@@ -24,7 +24,7 @@ export const getDeploymentLogByIdModel = async (id: string): Promise<DeploymentL
     return (await DeploymentLogModel.findByPk(id))?.toJSON() as DeploymentLog;
 };
 
-export const createDeploymentLogModel = async (projectId:string, log:string, status:DeploymentState) => {
+export const createDeploymentLogModel = async (projectId: string, log: string, status: DeploymentState) => {
     const id = crypto.randomUUID();
     await DeploymentLogModel.create({ id, projectId, log, status });
     return id;
@@ -33,7 +33,6 @@ export const createDeploymentLogModel = async (projectId:string, log:string, sta
 export const updateDeploymentLogModel = async (id: string, data: Partial<DeploymentLog>) => {
     const log = await getDeploymentLogByIdModel(id);
     if (!log) throw new Error('Log not found');
-    console.log('Updating deployment log:', id, data);
     return await DeploymentLogModel.update(
         {
             ...data,

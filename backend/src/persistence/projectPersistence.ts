@@ -7,9 +7,9 @@ export interface ProjectModelType {
     repoOwner: string;
     repoName: string;
     deploymentKey: string;
-    runCommand: string;
     allowCICD: boolean;
     timeout?: number;
+    dirtyConfig?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -24,9 +24,9 @@ ProjectModel.init(
         repoOwner: DataTypes.STRING,
         repoName: DataTypes.STRING,
         deploymentKey: DataTypes.STRING,
-        runCommand: DataTypes.STRING,
         allowCICD: DataTypes.BOOLEAN,
         timeout: DataTypes.NUMBER,
+        dirtyConfig: DataTypes.BOOLEAN,
     },
     { sequelize }
 );

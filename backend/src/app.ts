@@ -1,6 +1,6 @@
 import cors from 'cors';
 import express from 'express';
-import routes from './routes/routes';
+import routes from './routes';
 
 export const initApp = async () => {
     const app = express();

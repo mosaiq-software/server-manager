@@ -2,28 +2,23 @@ export interface Project {
     id: string;
     repoOwner: string;
     repoName: string;
-    runCommand: string;
     state?: DeploymentState;
     deploymentKey?: string;
     createdAt?: string;
     updatedAt?: string;
     allowCICD?: boolean;
-    envs?: DotenvData[];
+    secrets?: Secret[];
     deployLogs?: DeployLogHeader[];
     timeout?: number;
-}
-
-export interface DotenvData {
-    env: string;
-    secrets: Secret[];
+    dirtyConfig?: boolean;
 }
 
 export interface Secret {
     projectId: string;
-    env: string;
     secretName: string;
     secretValue: string;
     secretPlaceholder: string;
+    variable: boolean;
 }
 
 export interface DeployLogHeader {
@@ -41,4 +36,26 @@ export enum DeploymentState {
     DEPLOYING = 'deploying',
     FAILED = 'failed',
     ACTIVE = 'active',
+}
+
+export interface DeployableProject {
+    projectId: string;
+    runCommand: string;
+    repoOwner: string;
+    repoName: string;
+    dotenv: string;
+    timeout: number;
+    logId: string;
+}
+
+export interface DeploymentLogUpdate {
+    logId: string;
+    status: DeploymentState;
+    log: string;
+}
+
+export interface WorkerNode {
+    workerId: string;
+    workerUrl: string;
+    authToken: string;
 }

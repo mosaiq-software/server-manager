@@ -4,19 +4,19 @@ export const assembleDotenv = (secrets: Secret[]): string => {
     return secrets.map((sec) => `${sec.secretName}=${sec.secretValue}`).join('\n');
 };
 
-export const parseSampleDotenv = (dotenv: string, projectId: string, env: string): Secret[] => {
+export const parseDotenv = (dotenv: string, projectId: string): Secret[] => {
     const lines = dotenv.split('\n');
     const secrets: Secret[] = [];
 
     for (const line of lines) {
         const [key, value] = line.split('=');
-        if (key) {
+        if (key?.trim().length) {
             secrets.push({
                 projectId: projectId,
-                env: env,
                 secretName: key.trim(),
                 secretValue: '',
                 secretPlaceholder: value?.trim() ?? '',
+                variable: false,
             });
         }
     }
