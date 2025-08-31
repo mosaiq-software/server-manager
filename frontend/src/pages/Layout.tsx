@@ -44,6 +44,11 @@ const Layout = (props: { children: React.ReactNode }) => {
                     label="Dashboard"
                     showActive
                 />
+                <RouterLink
+                    to="/workers"
+                    label="Workers"
+                    showActive
+                />
                 <Divider
                     w="80%"
                     mx="auto"

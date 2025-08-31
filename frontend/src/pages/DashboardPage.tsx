@@ -11,7 +11,7 @@ const DashboardPage = () => {
         id: '',
         repoOwner: 'mosaiq-software',
         repoName: '',
-        runCommand: 'npm run deploy',
+        allowCICD: false,
     });
     const projectCtx = useProjects();
 
@@ -20,6 +20,7 @@ const DashboardPage = () => {
             <Modal
                 opened={modal === 'create'}
                 onClose={() => setModal(null)}
+                withCloseButton={false}
             >
                 <Stack>
                     <Title order={3}>Create Project</Title>
@@ -44,14 +45,12 @@ const DashboardPage = () => {
                         value={newProject?.repoName || ''}
                         onChange={(e) => setNewProject({ ...newProject, repoName: e.target.value })}
                     />
-                    {newProject.repoOwner && newProject.repoName && <Link to={`https://github.com/${newProject.repoOwner}/${newProject.repoName}`} target='_blank'>{`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}</Link>}
-                    <TextInput
-                        label="Deployment Command"
-                        placeholder="npm run deploy"
-                        description="Can use node, npm, docker, or shell"
-                        value={newProject?.runCommand || ''}
-                        onChange={(e) => setNewProject({ ...newProject, runCommand: e.target.value })}
-                    />
+                    {newProject.repoOwner && newProject.repoName && (
+                        <Link
+                            to={`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}
+                            target="_blank"
+                        >{`https://github.com/${newProject.repoOwner}/${newProject.repoName}`}</Link>
+                    )}
                     <Switch
                         label="Allow CI/CD"
                         checked={newProject?.allowCICD || false}
@@ -66,9 +65,9 @@ const DashboardPage = () => {
                         </Button>
                         <Button
                             variant="filled"
-                            onClick={async ()=>{
+                            onClick={async () => {
                                 await projectCtx.create(newProject);
-                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                await new Promise((resolve) => setTimeout(resolve, 1000));
                                 navigate(`/p/${newProject.id}`);
                             }}
                         >
@@ -79,9 +78,7 @@ const DashboardPage = () => {
             </Modal>
             <Title>NSM</Title>
             <Button onClick={() => setModal('create')}>Create Project</Button>
-            <Stack>
-
-            </Stack>
+            <Stack></Stack>
         </Container>
     );
 };

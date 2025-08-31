@@ -5,6 +5,7 @@ import express from 'express';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
 import { getDeploymentLogByIdModel } from '@/persistence/deploymentLogPersistence';
 import { updateEnvironmentVariable } from '@/controllers/secretController';
+import { createWorkerNode, deleteWorkerNode, getAllWorkerNodes, regenerateWorkerNodeKey, updateWorkerNode } from './controllers/workerNodeController';
 
 const router = express.Router();
 
@@ -116,6 +117,17 @@ router.get(API_ROUTES.GET_DEPLOY_LOG, async (req, res) => {
     }
 });
 
+router.get(API_ROUTES.GET_WORKER_NODES, async (req, res) => {
+    try {
+        const workerNodes = await getAllWorkerNodes();
+        const response: API_RETURN[API_ROUTES.GET_WORKER_NODES] = workerNodes;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error getting worker nodes', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
 router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_PROJECT];
     try {
@@ -193,6 +205,71 @@ router.post(API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error updating deployment log', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.post(API_ROUTES.POST_CREATE_WORKER_NODE, async (req, res) => {
+    const body = req.body as API_BODY[API_ROUTES.POST_CREATE_WORKER_NODE];
+    try {
+        if (!body || !body.workerId || !body.address) {
+            res.status(400).send('Invalid request body');
+            return;
+        }
+        const workerNode = await createWorkerNode(body.workerId, body.address);
+        const response: API_RETURN[API_ROUTES.POST_CREATE_WORKER_NODE] = workerNode;
+        res.status(201).json(response);
+    } catch (e: any) {
+        console.error('Error creating worker node', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.post(API_ROUTES.POST_UPDATE_WORKER_NODE, async (req, res) => {
+    const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_WORKER_NODE];
+    const params = req.params as API_PARAMS[API_ROUTES.POST_UPDATE_WORKER_NODE];
+    try {
+        if (!params.workerId) {
+            res.status(400).send('Invalid request');
+            return;
+        }
+        await updateWorkerNode(params.workerId, body);
+        const response: API_RETURN[API_ROUTES.POST_UPDATE_WORKER_NODE] = undefined;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error updating worker node', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.post(API_ROUTES.POST_DELETE_WORKER_NODE, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_DELETE_WORKER_NODE];
+    try {
+        if (!params.workerId) {
+            res.status(400).send('Invalid request');
+            return;
+        }
+        await deleteWorkerNode(params.workerId);
+        const response: API_RETURN[API_ROUTES.POST_DELETE_WORKER_NODE] = undefined;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error deleting worker node', e);
+        res.status(500).send('Internal server error');
+    }
+});
+
+router.post(API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY];
+    try {
+        if (!params.workerId) {
+            res.status(400).send('Invalid request');
+            return;
+        }
+        const newKey = await regenerateWorkerNodeKey(params.workerId);
+        const response: API_RETURN[API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY] = newKey;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error regenerating worker node key', e);
         res.status(500).send('Internal server error');
     }
 });

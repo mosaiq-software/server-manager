@@ -1,0 +1,37 @@
+import { sequelize } from '@/utils/dbHelper';
+import { WorkerNode } from '@mosaiq/nsm-common/types';
+import { DataTypes, Model } from 'sequelize';
+
+class WorkerNodeModel extends Model {}
+WorkerNodeModel.init(
+    {
+        workerId: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+        },
+        address: DataTypes.STRING,
+        authToken: DataTypes.STRING,
+    },
+    { sequelize }
+);
+
+export const getAllWorkerNodesModel = async (): Promise<WorkerNode[]> => {
+    return (await WorkerNodeModel.findAll())?.map((sec) => sec.toJSON()) as WorkerNode[];
+};
+
+export const createWorkerNodeModel = async (wn: WorkerNode) => {
+    return await WorkerNodeModel.create({ ...wn });
+};
+
+export const updateWorkerNodeModel = async (workerId: string, data: Partial<WorkerNode>) => {
+    return await WorkerNodeModel.update(
+        {
+            ...data,
+        },
+        { where: { workerId } }
+    );
+};
+
+export const deleteWorkerNodeModel = async (workerId: string) => {
+    return await WorkerNodeModel.destroy({ where: { workerId } });
+};

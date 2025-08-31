@@ -15,6 +15,7 @@ DeploymentLogModel.init(
         projectId: DataTypes.STRING,
         status: DataTypes.STRING,
         log: DataTypes.TEXT,
+        workerNodeId: DataTypes.STRING,
     },
     { sequelize }
 );
@@ -27,9 +28,9 @@ export const getDeploymentLogByIdModel = async (id: string): Promise<DeploymentL
     return (await DeploymentLogModel.findByPk(id))?.toJSON() as DeploymentLog;
 };
 
-export const createDeploymentLogModel = async (projectId: string, log: string, status: DeploymentState) => {
+export const createDeploymentLogModel = async (projectId: string, log: string, status: DeploymentState, workerNodeId: string) => {
     const id = crypto.randomUUID();
-    await DeploymentLogModel.create({ id, projectId, log, status });
+    await DeploymentLogModel.create({ id, projectId, log, status, workerNodeId });
     return id;
 };
 

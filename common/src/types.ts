@@ -56,6 +56,12 @@ export interface DeploymentLogUpdate {
     log: string;
 }
 
+export interface WorkerNode {
+    workerId: string;
+    address: string;
+    authToken: string;
+}
+
 export enum NginxConfigLocationType {
     STATIC = 'static',
     PROXY = 'proxy',
@@ -76,7 +82,7 @@ export interface ProxyConfigLocation {
     proxyPass: string;
     websocketSupport: boolean;
     timeout?: number;
-    maxClientBodySizeMb?: string;
+    maxClientBodySizeMb?: number;
 }
 export interface RedirectConfigLocation {
     type: NginxConfigLocationType.REDIRECT;

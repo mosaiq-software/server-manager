@@ -49,7 +49,7 @@ export const createProject = async (project: Project) => {
             id: project.id,
             repoOwner: project.repoOwner,
             repoName: project.repoName,
-            deploymentKey: generateDeploymentKey(),
+            deploymentKey: generate32CharKey(),
             state: DeploymentState.READY,
             allowCICD: !!project.allowCICD,
             dirtyConfig: false,
@@ -84,11 +84,11 @@ export const resetDeploymentKey = async (projectId: string): Promise<string | nu
     const project = await getProjectByIdModel(projectId);
     if (!project) return null;
 
-    const newKey = generateDeploymentKey();
+    const newKey = generate32CharKey();
     await updateProject(projectId, { deploymentKey: newKey });
     return newKey;
 };
 
-const generateDeploymentKey = (): string => {
+export const generate32CharKey = (): string => {
     return crypto.randomUUID().replace(/-/g, '');
 };
