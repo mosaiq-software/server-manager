@@ -1,15 +1,18 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { initApp } from './app';
 import { applyGithubFingerprints } from './utils/authGit';
 import { exit } from 'process';
 
+if (process.env.PRODUCTION !== 'true') {
+    dotenv.config({ path: '../.env' });
+}
+
 const start = async () => {
+    applyGithubFingerprints();
     const app = await initApp();
     const server = app.listen(process.env.API_PORT, () => {
-        console.log(`Server started at ${process.env.API_URL}:${process.env.API_PORT}`);
+        console.log(`Server started on port ${process.env.API_PORT}`);
     });
-
-    applyGithubFingerprints();
 
     process.on('SIGTERM', async () => {
         console.warn('Received SIGTERM, Ignoring...');

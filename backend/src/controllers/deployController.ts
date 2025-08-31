@@ -27,17 +27,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             timeout: project.timeout || DEFAULT_TIMEOUT,
             logId: logId,
         };
-        const res = await fetch(WORKER_ROUTES.POST_DEPLOY_PROJECT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-            const text = await res.text();
-            throw new Error(`Worker error: ${res.status} - ${text}`);
-        }
+        await workerNodePost(WORKER_ROUTES.POST_DEPLOY_PROJECT, body);
     } catch (error: any) {
         console.error('Error deploying project:', error);
         if (logId) {
@@ -47,9 +37,10 @@ export const deployProject = async (projectId: string): Promise<string | undefin
     return logId;
 };
 
-async function workerNodePost <T extends WORKER_ROUTES> (ep:T, body: WORKER_BODY[T], workerNodeId:string) {
-    const url = `${process.env.}`
-    const res = await fetch(ep, {
+async function workerNodePost<T extends WORKER_ROUTES>(ep: T, body: WORKER_BODY[T]) {
+    //TODO handle distributing calls across to other worker nodes?
+    const url = `${process.env.WORKER_NODE_URL}${ep}`;
+    const res = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
