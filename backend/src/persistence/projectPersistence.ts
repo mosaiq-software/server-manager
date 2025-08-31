@@ -43,7 +43,7 @@ export const createProjectModel = async (id: string, data: Partial<ProjectModelT
     return await ProjectModel.create({ id, ...data });
 };
 
-export const updateProjectModel = async (id: string, data: Partial<ProjectModelType>) => {
+export const updateProjectModelNoDirty = async (id: string, data: Partial<ProjectModelType>) => {
     return await ProjectModel.update(
         {
             ...data,

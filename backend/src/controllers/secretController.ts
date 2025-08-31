@@ -1,7 +1,7 @@
 import { createSecretModel, deleteAllSecretsForProjectEnvModel, getAllSecretsForProjectModel, updateSecretModel } from '@/persistence/secretPersistence';
 import { assembleDotenv, parseDotenv } from '@mosaiq/nsm-common/secretUtil';
 import { Secret } from '@mosaiq/nsm-common/types';
-import { updateProject } from './projectController';
+import { updateProjectModelNoDirty } from '@/persistence/projectPersistence';
 
 export const getDotenvForProject = async (projectId: string): Promise<string> => {
     const secrets = await getAllSecretsForProjectModel(projectId);
@@ -35,5 +35,5 @@ export const applyDotenv = async (dotenv: string, projectId: string) => {
 
 export const updateEnvironmentVariable = async (projectId: string, varName: string, newValue: string) => {
     await updateSecretModel(projectId, varName, newValue);
-    await updateProject(projectId, { dirtyConfig: true });
+    await updateProjectModelNoDirty(projectId, { dirtyConfig: true });
 };

@@ -37,7 +37,6 @@ export const updateDeploymentLogModel = async (id: string, data: Partial<Deploym
     await mutex.runExclusive(async () => {
         const log = await getDeploymentLogByIdModel(id);
         if (!log) throw new Error('Log not found');
-        console.log('Updating log', id, data);
         await DeploymentLogModel.update(
             {
                 ...data,

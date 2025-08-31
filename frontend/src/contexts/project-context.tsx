@@ -7,8 +7,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 type ProjectContextType = {
     projects: Project[];
     create: (newProject: Project) => Promise<void>;
-    update: (id: string, updatedProject: Partial<Project>) => Promise<void>;
-    updateSecret: (projectId: string, envName: string, secretName: string, newValue: string) => Promise<void>;
+    update: (id: string, updatedProject: Partial<Project>, clientOnly?: boolean) => Promise<void>;
+    updateSecret: (projectId: string, secretName: string, newValue: string) => Promise<void>;
 };
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -53,10 +53,12 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
         }
     };
 
-    const handleUpdateProject = async (id: string, updatedProject: Partial<Project>) => {
+    const handleUpdateProject = async (id: string, updatedProject: Partial<Project>, clientOnly?: boolean) => {
         try {
-            await apiPost(API_ROUTES.POST_UPDATE_PROJECT, { projectId: id }, updatedProject, 'AUTH TOKEN...');
-            setProjects((prev) => prev.map((proj) => (proj.id === id ? { ...proj, ...updatedProject } : proj)));
+            if (!clientOnly) {
+                await apiPost(API_ROUTES.POST_UPDATE_PROJECT, { projectId: id }, updatedProject, 'AUTH TOKEN...');
+            }
+            setProjects((prev) => prev.map((proj) => (proj.id === id ? { ...proj, dirtyConfig: true, ...updatedProject } : proj)));
             notifications.show({
                 title: 'Success',
                 message: 'Project updated successfully',
@@ -71,16 +73,20 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
         }
     };
 
-    const updateSecret = async (projectId: string, envName: string, secretName: string, newValue: string) => {
+    const updateSecret = async (projectId: string, secretName: string, newValue: string) => {
         try {
-            await apiPost(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId }, { value: newValue, envName, varName: secretName }, 'AUTH TOKEN...');
-            setProjects((prev) => prev.map((proj) => (proj.id === projectId ? {
-                ...proj,
-                envs: (proj.envs || []).map((env) => (env.env === envName ? {
-                    ...env,
-                    secrets: env.secrets.map((secret) => (secret.secretName === secretName ? { ...secret, secretValue: newValue } : secret))
-                } : env))
-            } : proj)));
+            await apiPost(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId }, { value: newValue, varName: secretName }, 'AUTH TOKEN...');
+            setProjects((prev) =>
+                prev.map((proj) =>
+                    proj.id === projectId
+                        ? {
+                              ...proj,
+                              dirtyConfig: true,
+                              secrets: proj.secrets?.map((secret) => (secret.secretName === secretName ? { ...secret, secretValue: newValue } : secret)),
+                          }
+                        : proj
+                )
+            );
             notifications.show({
                 title: 'Success',
                 message: 'Secret updated successfully',
@@ -101,7 +107,7 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
                 projects,
                 create: handleCreateProject,
                 update: handleUpdateProject,
-                updateSecret
+                updateSecret,
             }}
         >
             {children}

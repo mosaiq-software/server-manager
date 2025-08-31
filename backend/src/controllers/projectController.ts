@@ -1,4 +1,4 @@
-import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModel } from '@/persistence/projectPersistence';
+import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
 import { applyDotenv, getAllSecretsForProject } from './secretController';
 import { getAllDeploymentLogs } from '@/persistence/deploymentLogPersistence';
@@ -26,6 +26,9 @@ export const getProject = async (projectId: string) => {
         updatedAt: projectData.updatedAt,
         secrets: secrets,
         deployLogs: deployLogs,
+        allowCICD: projectData.allowCICD,
+        dirtyConfig: projectData.dirtyConfig,
+        timeout: projectData.timeout,
     };
 
     return project;
@@ -63,7 +66,7 @@ export const createProject = async (project: Project) => {
 
 export const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
-        await updateProjectModel(id, updates);
+        await updateProjectModelNoDirty(id, { dirtyConfig: true, ...updates });
     } catch (error) {
         console.error('Error updating project:', error);
         return null;
@@ -82,7 +85,7 @@ export const resetDeploymentKey = async (projectId: string): Promise<string | nu
     if (!project) return null;
 
     const newKey = generateDeploymentKey();
-    await updateProjectModel(projectId, { deploymentKey: newKey });
+    await updateProject(projectId, { deploymentKey: newKey });
     return newKey;
 };
 

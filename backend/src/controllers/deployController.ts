@@ -1,5 +1,5 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
-import { getProjectByIdModel, updateProjectModel } from '@/persistence/projectPersistence';
+import { getProjectByIdModel, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
 import { WORKER_BODY, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { getDotenvForProject } from './secretController';
@@ -11,6 +11,10 @@ export const deployProject = async (projectId: string): Promise<string | undefin
     try {
         const project = await getProjectByIdModel(projectId);
         if (!project) throw new Error('Project not found');
+
+        if (project.state === DeploymentState.DEPLOYING) {
+            return undefined;
+        }
 
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING);
 
@@ -31,7 +35,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
     } catch (error: any) {
         console.error('Error deploying project:', error);
         if (logId) {
-            await updateDeploymentLogModel(logId, { log: `Error deploying project: ${error.message}\n`, status: DeploymentState.FAILED });
+            await updateDeploymentLog(logId, DeploymentState.FAILED, `Error deploying project: ${error.message}\n`);
         }
     }
     return logId;
@@ -54,5 +58,6 @@ async function workerNodePost<T extends WORKER_ROUTES>(ep: T, body: WORKER_BODY[
 }
 
 export const updateDeploymentLog = async (logId: string, status: DeploymentState, logText: string) => {
-    return updateDeploymentLogModel(logId, { status, log: logText });
+    await updateDeploymentLogModel(logId, { status, log: logText });
+    await updateProjectModelNoDirty(logId, { state: status });
 };

@@ -35,7 +35,9 @@ export enum DeploymentState {
     READY = 'ready',
     DEPLOYING = 'deploying',
     FAILED = 'failed',
-    ACTIVE = 'active',
+    DEPLOYED = 'deployed',
+    HEALTHY = 'healthy',
+    DESTROYING = 'destroying',
 }
 
 export interface DeployableProject {

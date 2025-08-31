@@ -3,7 +3,6 @@ import { useDisclosure } from '@mantine/hooks';
 import { AppShell, Avatar, Burger, Divider, Group, Text, Title } from '@mantine/core';
 import RouterLink from '@/components/RouterLink';
 import { useProjects } from '@/contexts/project-context';
-import { DeploymentStateIcons } from '@/utils/statusUtils';
 
 const Layout = (props: { children: React.ReactNode }) => {
     const [opened, { toggle }] = useDisclosure();
@@ -27,31 +26,53 @@ const Layout = (props: { children: React.ReactNode }) => {
                     size="sm"
                 />
 
-                <Group h="100%" align='center' px="1rem">
-                    <Avatar
-                        src="/assets/MosaiqLogo.png"
-                    />
-                    <Text><span style={{fontWeight: '900'}}>N</span>ode <span style={{fontWeight: '900'}}>S</span>erver <span style={{fontWeight: '900'}}>M</span>anager</Text>
+                <Group
+                    h="100%"
+                    align="center"
+                    px="1rem"
+                >
+                    <Avatar src="/assets/MosaiqLogo.png" />
+                    <Text>
+                        <span style={{ fontWeight: '900' }}>N</span>ode <span style={{ fontWeight: '900' }}>S</span>erver <span style={{ fontWeight: '900' }}>M</span>anager
+                    </Text>
                 </Group>
             </AppShell.Header>
 
             <AppShell.Navbar p="md">
-                <RouterLink to="/" label="Dashboard" showActive/>
-                <Divider w="80%" mx="auto" my="sm"/>
-                {
-                    projectCtx.projects.map(project => (
-                        <RouterLink 
-                            to={`/p/${project.id}`} 
-                            label={`${DeploymentStateIcons[project.state ?? ""]} ${project.id}`} 
-                            key={project.id}
+                <RouterLink
+                    to="/"
+                    label="Dashboard"
+                    showActive
+                />
+                <Divider
+                    w="80%"
+                    mx="auto"
+                    my="sm"
+                />
+                {projectCtx.projects.map((project) => (
+                    <RouterLink
+                        to={`/p/${project.id}`}
+                        label={`${project.id} (${project.state})`}
+                        key={project.id}
+                        showActive
+                    >
+                        <RouterLink
+                            to={`/p/${project.id}/config`}
+                            label="Config"
                             showActive
-                        >
-                            <RouterLink to={`/p/${project.id}/config`} label="Config" showActive/>
-                            <RouterLink to={`/p/${project.id}/deploy`} label="Deploy" showActive/>
-                            <RouterLink to={`/p/${project.id}/logs`} label="Logs" showActive/>
-                        </RouterLink>
-                    ))
-                }
+                        />
+                        <RouterLink
+                            to={`/p/${project.id}/deploy`}
+                            label="Deploy"
+                            showActive
+                        />
+                        <RouterLink
+                            to={`/p/${project.id}/logs`}
+                            label="Logs"
+                            showActive
+                        />
+                    </RouterLink>
+                ))}
             </AppShell.Navbar>
 
             <AppShell.Main>{props.children}</AppShell.Main>

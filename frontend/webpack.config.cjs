@@ -47,10 +47,16 @@ module.exports = () => {
             new HtmlWebpackPlugin({
                 template: path.resolve(__dirname, 'src/index.html')
             }),
-            new Dotenv({
-                systemvars: true,
-                // path: '../.env'
-            })
+            new Dotenv(
+                process.env.PRODUCTION === "true" ?
+                    {
+                        systemvars: true,
+                    }
+                    :
+                    {
+                        path: '../.env'
+                    }
+            )
         ],
         optimization: {
             moduleIds: 'deterministic',
