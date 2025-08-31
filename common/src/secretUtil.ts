@@ -11,12 +11,13 @@ export const parseDotenv = (dotenv: string, projectId: string): Secret[] => {
     for (const line of lines) {
         const [key, value] = line.split('=');
         if (key?.trim().length) {
+            const isVar = value?.trim().startsWith('<<<') && value?.trim().endsWith('>>>');
             secrets.push({
                 projectId: projectId,
                 secretName: key.trim(),
                 secretValue: '',
                 secretPlaceholder: value?.trim() ?? '',
-                variable: false,
+                variable: isVar,
             });
         }
     }

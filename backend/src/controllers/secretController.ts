@@ -33,7 +33,7 @@ export const applyDotenv = async (dotenv: string, projectId: string) => {
     }
 };
 
-export const updateEnvironmentVariable = async (projectId: string, varName: string, newValue: string) => {
-    await updateSecretModel(projectId, varName, newValue);
+export const updateEnvironmentVariable = async (projectId: string, sec: Secret) => {
+    await updateSecretModel(projectId, sec);
     await updateProjectModelNoDirty(projectId, { dirtyConfig: true });
 };

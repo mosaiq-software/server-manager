@@ -62,7 +62,7 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
 
     const updateSecrets = async (projectId: string, secrets: Secret[]) => {
         for (const secret of secrets) {
-            await apiPost(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId }, { value: secret.secretValue, varName: secret.secretName }, 'AUTH TOKEN...');
+            await apiPost(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId }, secret, 'AUTH TOKEN...');
             setProjects((prev) =>
                 prev.map((proj) =>
                     proj.id === projectId
@@ -71,7 +71,7 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
                               dirtyConfig: true,
                               secrets: proj.secrets?.map((secret) => {
                                   const updatedSecret = secrets.find((s) => s.secretName === secret.secretName);
-                                  return updatedSecret ? { ...secret, secretValue: updatedSecret.secretValue } : secret;
+                                  return updatedSecret ? { ...secret, ...updatedSecret } : secret;
                               }),
                           }
                         : proj

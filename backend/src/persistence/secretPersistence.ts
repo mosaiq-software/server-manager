@@ -19,6 +19,7 @@ SecretModel.init(
         secretPlaceholder: {
             type: DataTypes.STRING,
         },
+        variable: DataTypes.BOOLEAN,
     },
     { sequelize }
 );
@@ -31,12 +32,14 @@ export const createSecretModel = async (sec: Secret) => {
     return await SecretModel.create({ ...sec });
 };
 
-export const updateSecretModel = async (projectId: string, secretName: string, newValue: string) => {
+export const updateSecretModel = async (projectId: string, secret: Secret) => {
     return await SecretModel.update(
         {
-            secretValue: newValue,
+            secretValue: secret.secretValue,
+            secretPlaceholder: secret.secretPlaceholder,
+            variable: secret.variable,
         },
-        { where: { projectId, secretName } }
+        { where: { projectId, secretName: secret.secretName } }
     );
 };
 

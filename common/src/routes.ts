@@ -1,4 +1,4 @@
-import { DeploymentLog, DeploymentLogUpdate, DeploymentState, Project, WorkerNode } from './types';
+import { DeploymentLog, DeploymentLogUpdate, DeploymentState, Project, Secret, WorkerNode } from './types';
 
 // ===== ROUTES =====
 export enum API_ROUTES {
@@ -55,7 +55,7 @@ export interface API_BODY {
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
     [API_ROUTES.POST_UPDATE_PROJECT]: Partial<Project>;
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: {};
-    [API_ROUTES.POST_UPDATE_ENV_VAR]: { value: string; varName: string };
+    [API_ROUTES.POST_UPDATE_ENV_VAR]: Secret;
     [API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE]: DeploymentLogUpdate;
     [API_ROUTES.POST_CREATE_WORKER_NODE]: { workerId: string; address: string };
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: Partial<WorkerNode>;

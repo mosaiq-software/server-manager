@@ -342,7 +342,7 @@ const EnvVarRow = (props: EnvVarRowProps) => {
                                                 {gr.map((varItem, i) => (
                                                     <Combobox.Option
                                                         key={varItem.field}
-                                                        value={`<${varItem.parent}.${varItem.field}>`}
+                                                        value={`<<<${varItem.parent}.${varItem.field}>>>`}
                                                     >
                                                         <Group gap={'xs'}>
                                                             <Text
