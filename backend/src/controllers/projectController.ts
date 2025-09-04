@@ -57,7 +57,7 @@ export const createProject = async (project: Project) => {
             state: DeploymentState.READY,
             allowCICD: !!project.allowCICD,
             dirtyConfig: false,
-            nginxConfigJson: JSON.stringify({}),
+            nginxConfigJson: JSON.stringify({ servers: [] }),
         };
         await createProjectModel(project.id, newProject);
 

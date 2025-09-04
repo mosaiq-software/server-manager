@@ -11,7 +11,7 @@ import { ProjectHeader } from '@/components/ProjectHeader';
 import { assembleDotenv, extractVariables } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
-import { MdOutlineLan, MdOutlineLinkOff, MdOutlineWeb } from 'react-icons/md';
+import { MdOutlineCode, MdOutlineDns, MdOutlineLan, MdOutlineLink, MdOutlineLinkOff, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -241,15 +241,23 @@ interface EnvVarRowProps {
     vars: DynamicEnvVariable[];
 }
 const EnvVarRow = (props: EnvVarRowProps) => {
+    const MenuItems = {
+        [NginxConfigLocationType.CUSTOM]: { icon: MdOutlineCode, desc: 'Custom location block', title: 'Custom NGINX Block' },
+        [NginxConfigLocationType.REDIRECT]: { icon: MdOutlineLink, desc: 'Redirect requests to another URL', title: 'Redirect Link' },
+        [NginxConfigLocationType.PROXY]: { icon: MdOutlineDns, desc: 'Proxy requests to another server', title: 'API Service' },
+        [NginxConfigLocationType.STATIC]: { icon: MdOutlineWeb, desc: 'Serve static files from a directory', title: 'Static Page' },
+        Domain: { icon: MdOutlineUmbrella, desc: 'The domain of a server block', title: 'Domain' },
+        Persistence: { icon: MdOutlineStorage, desc: 'Persistent storage volume', title: 'Storage Volume' },
+    };
     const combobox = useCombobox();
     const { secret } = props;
-    const groupedVars: { [key: string]: DynamicEnvVariable[] } = {};
+    const groupedVars: { [key: string]: { vars: DynamicEnvVariable[]; menuItem: (typeof MenuItems)[keyof typeof MenuItems] | undefined } } = {};
     props.vars.forEach((varItem) => {
-        const parent = varItem.parent;
+        const parent = varItem.parent + (varItem.type ? ` (${MenuItems[varItem.type]?.title})` : '') || 'Other';
         if (!groupedVars[parent]) {
-            groupedVars[parent] = [];
+            groupedVars[parent] = { vars: [], menuItem: varItem.type ? MenuItems[varItem.type] : undefined };
         }
-        groupedVars[parent].push(varItem);
+        groupedVars[parent].vars.push(varItem);
     });
     return (
         <>
@@ -304,9 +312,14 @@ const EnvVarRow = (props: EnvVarRowProps) => {
                                         {Object.entries(groupedVars).map(([parent, gr], i) => (
                                             <Combobox.Group
                                                 key={parent}
-                                                label={parent}
+                                                label={
+                                                    <Group align="center">
+                                                        {gr.menuItem && <gr.menuItem.icon />}
+                                                        <Text fz="xs">{parent}</Text>
+                                                    </Group>
+                                                }
                                             >
-                                                {gr.map((varItem, i) => (
+                                                {gr.vars.map((varItem, i) => (
                                                     <Combobox.Option
                                                         key={varItem.field}
                                                         value={`<<<${varItem.parent}.${varItem.field}>>>`}

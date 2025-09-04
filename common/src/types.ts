@@ -123,5 +123,6 @@ export interface ProjectNginxConfig {
 export interface DynamicEnvVariable {
     parent: string;
     field: string;
+    type: NginxConfigLocationType | 'Domain' | 'Persistence' | undefined;
     placeholder?: string;
 }

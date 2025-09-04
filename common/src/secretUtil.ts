@@ -28,24 +28,24 @@ export const parseDotenv = (dotenv: string, projectId: string): Secret[] => {
 export const extractVariables = (project: Project) => {
     const { nginxConfig } = project;
     const vars = new Set<DynamicEnvVariable>();
-    vars.add({ parent: 'General', field: 'WorkerNodeId', placeholder: 'server-rig-1' });
+    vars.add({ parent: 'General', field: 'WorkerNodeId', placeholder: 'server-rig-1', type: undefined });
     if (nginxConfig) {
         for (const server of nginxConfig.servers) {
             const serverLetter = String.fromCharCode(64 + server.index);
-            vars.add({ parent: serverLetter, field: 'Domain', placeholder: server.domain });
+            vars.add({ parent: serverLetter, field: 'Domain', placeholder: server.domain, type: 'Domain' });
             for (const location of server.locations) {
                 const id = `${serverLetter}${location.index}`;
-                vars.add({ parent: id, field: 'URL', placeholder: `https://${server.domain}${location.path}` });
-                vars.add({ parent: id, field: 'Path', placeholder: location.path });
+                vars.add({ parent: id, field: 'URL', placeholder: `https://${server.domain}${location.path}`, type: location.type });
+                vars.add({ parent: id, field: 'Path', placeholder: location.path, type: location.type });
                 switch (location.type) {
                     case NginxConfigLocationType.STATIC:
-                        vars.add({ parent: id, field: 'Directory', placeholder: `/www/${project.id} (Generated on Deploy)` });
+                        vars.add({ parent: id, field: 'Directory', placeholder: `/www/${project.id} (Generated on Deploy)`, type: location.type });
                         break;
                     case NginxConfigLocationType.PROXY:
-                        vars.add({ parent: id, field: 'Port', placeholder: '1234 (Generated on Deploy)' });
+                        vars.add({ parent: id, field: 'Port', placeholder: '1234 (Generated on Deploy)', type: location.type });
                         break;
                     case NginxConfigLocationType.REDIRECT:
-                        vars.add({ parent: id, field: 'Target', placeholder: location.target });
+                        vars.add({ parent: id, field: 'Target', placeholder: location.target, type: location.type });
                         break;
                     case NginxConfigLocationType.CUSTOM:
                         break;
@@ -55,7 +55,7 @@ export const extractVariables = (project: Project) => {
     }
 
     for (let i = 1; i <= 5; i++) {
-        vars.add({ parent: 'Persistence', field: `Volume${i}`, placeholder: `/example-data/${project.id}/volume-${i}` });
+        vars.add({ parent: 'Persistence', field: `Volume${i}`, placeholder: `/example-data/${project.id}/volume-${i}`, type: 'Persistence' });
     }
 
     return Array.from(vars);
