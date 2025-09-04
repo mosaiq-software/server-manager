@@ -24,16 +24,18 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId);
 
+        const dotenv = await getDotenvForProject(projectId);
+
         const runCommand = `docker compose -p ${project.id} up --build -d`;
         const body: DeployableProject = {
             projectId: project.id,
             runCommand: runCommand,
             repoName: project.repoName,
             repoOwner: project.repoOwner,
+            repoBranch: project.repoBranch,
             timeout: project.timeout || DEFAULT_TIMEOUT,
             logId: logId,
-            nginxConfig: project.nginxConfig || { servers: [] },
-            secrets: project.secrets || [],
+            dotenv: dotenv,
         };
         await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, body);
     } catch (error: any) {

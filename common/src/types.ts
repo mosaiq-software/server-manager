@@ -2,6 +2,7 @@ export interface Project {
     id: string;
     repoOwner: string;
     repoName: string;
+    repoBranch?: string;
     state?: DeploymentState;
     deploymentKey?: string;
     createdAt?: string;
@@ -47,10 +48,10 @@ export interface DeployableProject {
     runCommand: string;
     repoOwner: string;
     repoName: string;
+    repoBranch: string | undefined;
     timeout: number;
     logId: string;
-    nginxConfig: ProjectNginxConfig;
-    secrets: Secret[];
+    dotenv: string;
 }
 
 export interface DeploymentLogUpdate {
