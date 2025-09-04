@@ -1,16 +1,17 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
-import { DeploymentState } from '@mosaiq/nsm-common/types';
+import { DeployableProject, DeploymentState } from '@mosaiq/nsm-common/types';
 import { WORKER_BODY, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { getDotenvForProject } from './secretController';
 import { getWorkerNodeById } from './workerNodeController';
+import { getProject } from './projectController';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
     let logId: string | undefined;
     try {
-        const project = await getProjectByIdModel(projectId);
+        const project = await getProject(projectId);
         if (!project) throw new Error('Project not found');
 
         if (project.state === DeploymentState.DEPLOYING) {
@@ -23,18 +24,16 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId);
 
-        const dotenv = await getDotenvForProject(project.id);
-
         const runCommand = `docker compose -p ${project.id} up --build -d`;
-
-        const body: WORKER_BODY[WORKER_ROUTES.POST_DEPLOY_PROJECT] = {
+        const body: DeployableProject = {
             projectId: project.id,
             runCommand: runCommand,
             repoName: project.repoName,
             repoOwner: project.repoOwner,
-            dotenv: dotenv,
             timeout: project.timeout || DEFAULT_TIMEOUT,
             logId: logId,
+            nginxConfig: project.nginxConfig || { servers: [] },
+            secrets: project.secrets || [],
         };
         await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, body);
     } catch (error: any) {
@@ -47,7 +46,6 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 };
 
 async function workerNodePost<T extends WORKER_ROUTES>(wnId: string, ep: T, body: WORKER_BODY[T]) {
-    //TODO handle distributing calls across to other worker nodes?
     const wn = await getWorkerNodeById(wnId);
     if (!wn) throw new Error(`WorkerNode with id ${wnId} not found`);
     const url = `${wn.address}${ep}`;

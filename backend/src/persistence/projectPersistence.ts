@@ -11,7 +11,6 @@ export interface ProjectModelType {
     timeout?: number;
     dirtyConfig?: boolean;
     nginxConfigJson: string;
-    dynamicVariablesJson: string;
     workerNodeId?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -31,7 +30,6 @@ ProjectModel.init(
         timeout: DataTypes.NUMBER,
         dirtyConfig: DataTypes.BOOLEAN,
         nginxConfigJson: DataTypes.TEXT,
-        dynamicVariablesJson: DataTypes.TEXT,
         workerNodeId: DataTypes.STRING,
     },
     { sequelize }

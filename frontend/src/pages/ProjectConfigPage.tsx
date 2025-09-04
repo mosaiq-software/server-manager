@@ -1,4 +1,4 @@
-import { ActionIcon, ActionIconGroup, Alert, Button, Center, Combobox, CopyButton, Divider, Fieldset, Grid, Group, Loader, Menu, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
+import { ActionIcon, ActionIconGroup, Alert, Button, Center, Combobox, CopyButton, Divider, Fieldset, Grid, Group, Loader, Menu, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeploymentState, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, Secret } from '@mosaiq/nsm-common/types';
@@ -8,47 +8,10 @@ import { apiGet, apiPost } from '@/utils/api';
 import { EditableTextInput } from '@/components/EditableTextInput';
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
-import { assembleDotenv } from '@mosaiq/nsm-common/secretUtil';
+import { assembleDotenv, extractVariables } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
 import { MdOutlineLan, MdOutlineLinkOff, MdOutlineWeb } from 'react-icons/md';
-
-const extractVariables = (project: Project) => {
-    const { nginxConfig } = project;
-    const vars = new Set<DynamicEnvVariable>();
-    vars.add({ parent: 'General', field: 'WorkerNodeId', placeholder: project.workerNodeId });
-    if (nginxConfig) {
-        for (const server of nginxConfig.servers) {
-            const serverLetter = String.fromCharCode(64 + server.index);
-            vars.add({ parent: serverLetter, field: 'Domain', placeholder: server.domain });
-            for (const location of server.locations) {
-                const id = `${serverLetter}${location.index}`;
-                vars.add({ parent: id, field: 'URL', placeholder: `https://${server.domain}${location.path}` });
-                vars.add({ parent: id, field: 'Path', placeholder: location.path });
-                switch (location.type) {
-                    case NginxConfigLocationType.STATIC:
-                        break;
-                    case NginxConfigLocationType.PROXY:
-                        vars.add({ parent: id, field: 'Port', placeholder: '1234' });
-                        vars.add({ parent: id, field: 'Timeout', placeholder: location.timeout?.toString() });
-                        vars.add({ parent: id, field: 'MaxClientBodySizeMB', placeholder: location.maxClientBodySizeMb?.toString() });
-                        break;
-                    case NginxConfigLocationType.REDIRECT:
-                        vars.add({ parent: id, field: 'Target', placeholder: location.target });
-                        break;
-                    case NginxConfigLocationType.CUSTOM:
-                        break;
-                }
-            }
-        }
-    }
-
-    for (let i = 1; i <= 5; i++) {
-        vars.add({ parent: 'Persistence', field: `Volume${i}`, placeholder: `/example-data/${project.id}/volume-${i}` });
-    }
-
-    return Array.from(vars);
-};
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -58,6 +21,7 @@ const ProjectConfigPage = () => {
     const workerCtx = useWorkers();
     const [project, setProject] = useState<Project | undefined | null>(undefined);
     const [secrets, setSecrets] = useState<Secret[]>([]);
+    const [dynamicEnvVariables, setDynamicEnvVariables] = useState<DynamicEnvVariable[]>([]);
 
     const varCombobox = useCombobox({
         onDropdownClose: () => varCombobox.resetSelectedOption(),
@@ -67,7 +31,8 @@ const ProjectConfigPage = () => {
         const foundProject = projectCtx.projects.find((proj) => proj.id === projectId);
         if (foundProject) {
             const vars = extractVariables(foundProject);
-            setProject({ ...foundProject, dynamicEnvVariables: vars });
+            setProject({ ...foundProject });
+            setDynamicEnvVariables(vars);
             setSecrets(foundProject.secrets ?? []);
         }
     }, [projectId, projectCtx.projects]);
@@ -75,7 +40,8 @@ const ProjectConfigPage = () => {
     const updateProject = (updatedFields: Partial<Project>) => {
         if (project) {
             const vars = extractVariables({ ...project, ...updatedFields });
-            setProject({ ...project, ...updatedFields, dynamicEnvVariables: vars });
+            setProject({ ...project, ...updatedFields });
+            setDynamicEnvVariables(vars);
         }
     };
 
@@ -201,9 +167,9 @@ const ProjectConfigPage = () => {
                     required
                     label="Worker Node"
                     description="Which worker node to use for deployments?"
-                    data={workerCtx.workers.map((worker) => ({ value: worker.workerId, label: `${worker.workerId} (${worker.address})` }))}
+                    data={workerCtx.workers.map((worker) => ({ value: worker.workerId, label: `${worker.workerId} (@${worker.address})` }))}
                     onChange={(value) => updateProject({ workerNodeId: value || undefined })}
-                    value={project.workerNodeId || ''}
+                    value={project.workerNodeId}
                     placeholder="Select a worker node"
                 />
                 <NumberInput
@@ -234,6 +200,7 @@ const ProjectConfigPage = () => {
             <NginxEditor
                 current={project.nginxConfig || { servers: [] }}
                 onSave={(config) => updateProject({ nginxConfig: config })}
+                project={project}
             />
             <Divider my="sm" />
             <Stack gap="xs">
@@ -257,7 +224,7 @@ const ProjectConfigPage = () => {
                                 key={secret.secretName}
                                 secret={secret}
                                 onChange={updateSecret}
-                                vars={project.dynamicEnvVariables || []}
+                                vars={dynamicEnvVariables}
                             />
                         );
                     })}
@@ -356,7 +323,7 @@ const EnvVarRow = (props: EnvVarRowProps) => {
                                                                     fz="xs"
                                                                     c="dimmed"
                                                                 >
-                                                                    ({varItem.placeholder})
+                                                                    {varItem.placeholder}
                                                                 </Text>
                                                             )}
                                                         </Group>

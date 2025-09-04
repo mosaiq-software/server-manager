@@ -6,6 +6,7 @@ import { MdOutlineArrowCircleRight, MdOutlineCode, MdOutlineComputer, MdOutlineD
 interface NginxEditorProps {
     current: ProjectNginxConfig;
     onSave: (config: ProjectNginxConfig) => void;
+    project: Project;
 }
 export const NginxEditor = (props: NginxEditorProps) => {
     const [config, setConfig] = useState<ProjectNginxConfig>(JSON.parse(JSON.stringify(props.current)));
@@ -61,6 +62,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                     timeout: undefined,
                     maxClientBodySizeMb: undefined,
                     websocketSupport: false,
+                    replications: 1,
                 };
                 break;
             case NginxConfigLocationType.REDIRECT:
@@ -235,6 +237,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
             <Button
                 onClick={handleAddServer}
                 w="min-content"
+                disabled={config.servers.length >= 26}
             >
                 Add a Domain
             </Button>
@@ -292,7 +295,7 @@ const RenderLocation = (props: RenderLocationProps) => {
                 <NumberInput
                     value={props.location.timeout}
                     label="Timeout (ms)"
-                    placeholder="60000"
+                    placeholder="60sec default"
                     min={0}
                     max={1000 * 60 * 60}
                     description="The timeout for the proxy connection."
@@ -313,7 +316,7 @@ const RenderLocation = (props: RenderLocationProps) => {
                     label="Max Client Body Size (MB)"
                     min={0}
                     max={1000 * 1000}
-                    placeholder="10"
+                    placeholder="10mb default"
                     description="The maximum allowed size of the client request body."
                     onChange={(e) => {
                         if (props.location.type !== NginxConfigLocationType.PROXY) return;
@@ -327,6 +330,31 @@ const RenderLocation = (props: RenderLocationProps) => {
                         }
                     }}
                 />
+                {/* <NumberInput
+                    value={props.location.replications}
+                    label="Replications"
+                    min={1}
+                    max={5}
+                    placeholder="1 default"
+                    description="Amount of replicas per worker node."
+                    onChange={(e) => {
+                        if (props.location.type !== NginxConfigLocationType.PROXY) return;
+                        if (e === '') {
+                            props.onChange({ ...props.location, replications: undefined });
+                            return;
+                        }
+                        const value = Number(e);
+                        if (!isNaN(value)) {
+                            props.onChange({ ...props.location, replications: value });
+                        }
+                    }}
+                /> */}
+                {/* <Text
+                    fz=".75rem"
+                    c="dimmed"
+                    mt="-xs"
+                    pl="xs"
+                >{`${props.location.replications ?? 1} replicas x ${props.workerNodes} workers = ${(props.location.replications ?? 1) * props.workerNodes} total instances of the service`}</Text> */}
                 <Switch
                     label="Support WebSocket"
                     checked={!!props.location.websocketSupport}

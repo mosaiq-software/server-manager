@@ -12,7 +12,6 @@ export interface Project {
     timeout?: number;
     dirtyConfig?: boolean;
     nginxConfig?: ProjectNginxConfig;
-    dynamicEnvVariables?: DynamicEnvVariable[];
     workerNodeId?: string;
 }
 
@@ -48,9 +47,10 @@ export interface DeployableProject {
     runCommand: string;
     repoOwner: string;
     repoName: string;
-    dotenv: string;
     timeout: number;
     logId: string;
+    nginxConfig: ProjectNginxConfig;
+    secrets: Secret[];
 }
 
 export interface DeploymentLogUpdate {
@@ -90,6 +90,7 @@ export interface ProxyConfigLocation {
     websocketSupport: boolean;
     timeout?: number;
     maxClientBodySizeMb?: number;
+    replications?: number;
 }
 export interface RedirectConfigLocation {
     locationId: string;
