@@ -268,15 +268,16 @@ const RenderLocation = (props: RenderLocationProps) => {
                     value={props.location.path}
                     label="Path"
                     placeholder="/"
-                    description={props.domain && props.location.path.startsWith('/') ? `https://${props.domain}${props.location.path}` : ''}
+                    description={(props.domain ? (props.location.path.startsWith('/') ? `https://${props.domain}${props.location.path}` : '') : '') + (props.location.spa ? ' (SPA must be /)' : '')}
                     onChange={(e) => props.location.type === NginxConfigLocationType.STATIC && props.onChange({ ...props.location, path: e.currentTarget.value })}
                     error={props.duplicatePath ? 'Duplicate Path' : undefined}
+                    readOnly={!!props.location.spa}
                 />
                 <Switch
                     label="Single Page Application"
                     description="Serve index.html for all non-file requests"
                     checked={!!props.location.spa}
-                    onChange={(e) => props.location.type === NginxConfigLocationType.STATIC && props.onChange({ ...props.location, spa: e.currentTarget.checked })}
+                    onChange={(e) => props.location.type === NginxConfigLocationType.STATIC && props.onChange({ ...props.location, spa: e.currentTarget.checked, path: e.currentTarget.checked ? '/' : props.location.path })}
                 />
                 <Switch
                     label="Force Allow CORS"

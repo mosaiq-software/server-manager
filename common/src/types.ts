@@ -52,6 +52,8 @@ export interface DeployableProject {
     timeout: number;
     logId: string;
     dotenv: string;
+    nginxConf: string;
+    domainsToCertify: string[];
 }
 
 export interface DeploymentLogUpdate {
@@ -63,6 +65,7 @@ export interface DeploymentLogUpdate {
 export interface WorkerNode {
     workerId: string;
     address: string;
+    port: number;
     authToken: string;
 }
 

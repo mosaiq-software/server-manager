@@ -3,7 +3,7 @@ import { assembleDotenv, parseDotenv, parseDynamicVariablePath } from '@mosaiq/n
 import { DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RedirectConfigLocation, Secret } from '@mosaiq/nsm-common/types';
 import { updateProjectModelNoDirty } from '@/persistence/projectPersistence';
 
-export const getDotenvForProject = async (project: Project, requestedPorts: { proxy: ProxyConfigLocation; port: number }[], dirMap: FullDirectoryMap): Promise<string> => {
+export const getDotenvForProject = async (project: Project, requestedPorts: { proxyLocationId: string; port: number }[], dirMap: FullDirectoryMap): Promise<string> => {
     const secrets = (project.secrets || []).map((sec) => fillSecret(sec, project, requestedPorts, dirMap));
     const dotenv = assembleDotenv(secrets);
     return dotenv;
@@ -37,7 +37,7 @@ export const updateEnvironmentVariable = async (projectId: string, sec: Secret) 
     await updateProjectModelNoDirty(projectId, { dirtyConfig: true });
 };
 
-const fillSecret = (secret: Secret, project: Project, requestedPorts: { proxy: ProxyConfigLocation; port: number }[], dirMap: FullDirectoryMap): Secret => {
+const fillSecret = (secret: Secret, project: Project, requestedPorts: { proxyLocationId: string; port: number }[], dirMap: FullDirectoryMap): Secret => {
     if (!secret.variable) {
         return secret;
     }
@@ -61,7 +61,7 @@ const fillSecret = (secret: Secret, project: Project, requestedPorts: { proxy: P
                 return secret;
             case DynamicEnvVariableFields.PORT:
                 if (location?.type === NginxConfigLocationType.PROXY) {
-                    const req = requestedPorts.find((r) => r.proxy.locationId === location.locationId);
+                    const req = requestedPorts.find((r) => r.proxyLocationId === location.locationId);
                     if (req) {
                         return { ...secret, secretValue: req.port.toString() };
                     }

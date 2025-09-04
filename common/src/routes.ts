@@ -57,7 +57,7 @@ export interface API_BODY {
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: {};
     [API_ROUTES.POST_UPDATE_ENV_VAR]: Secret;
     [API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE]: DeploymentLogUpdate;
-    [API_ROUTES.POST_CREATE_WORKER_NODE]: { workerId: string; address: string };
+    [API_ROUTES.POST_CREATE_WORKER_NODE]: { workerId: string; address: string; port: number };
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: Partial<WorkerNode>;
     [API_ROUTES.POST_DELETE_WORKER_NODE]: {};
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: {};

@@ -216,7 +216,7 @@ router.post(API_ROUTES.POST_CREATE_WORKER_NODE, async (req, res) => {
             res.status(400).send('Invalid request body');
             return;
         }
-        const workerNode = await createWorkerNode(body.workerId, body.address);
+        const workerNode = await createWorkerNode(body.workerId, body.address, body.port);
         const response: API_RETURN[API_ROUTES.POST_CREATE_WORKER_NODE] = workerNode;
         res.status(201).json(response);
     } catch (e: any) {
