@@ -75,7 +75,6 @@ export enum NginxConfigLocationType {
 
 export interface StaticConfigLocation {
     locationId: string;
-    index: number;
     type: NginxConfigLocationType.STATIC;
     path: string;
     serveDir: string;
@@ -84,7 +83,6 @@ export interface StaticConfigLocation {
 }
 export interface ProxyConfigLocation {
     locationId: string;
-    index: number;
     type: NginxConfigLocationType.PROXY;
     path: string;
     proxyPass: string;
@@ -95,14 +93,12 @@ export interface ProxyConfigLocation {
 }
 export interface RedirectConfigLocation {
     locationId: string;
-    index: number;
     type: NginxConfigLocationType.REDIRECT;
     path: string;
     target: string;
 }
 export interface CustomConfigLocation {
     locationId: string;
-    index: number;
     type: NginxConfigLocationType.CUSTOM;
     path: string;
     content: string;
@@ -110,7 +106,6 @@ export interface CustomConfigLocation {
 export type ConfigLocation = StaticConfigLocation | ProxyConfigLocation | RedirectConfigLocation | CustomConfigLocation;
 export interface ServerConfig {
     serverId: string;
-    index: number;
     domain: string;
     wildcardSubdomain: boolean;
     locations: ConfigLocation[];
@@ -120,9 +115,29 @@ export interface ProjectNginxConfig {
     servers: ServerConfig[];
 }
 
+export enum UpperDynamicEnvVariableType {
+    GENERAL = 'general',
+    DOMAIN = 'domain',
+}
+export type DynamicEnvVariableType = UpperDynamicEnvVariableType | NginxConfigLocationType;
+export enum DynamicEnvVariableFields {
+    WORKER_NODE_ID = 'WorkerNodeId',
+    DOMAIN = 'Domain',
+    URL = 'URL',
+    PATH = 'Path',
+    DIRECTORY = 'Directory',
+    PORT = 'Port',
+    TARGET = 'Target',
+    VOLUME = 'Volume',
+}
 export interface DynamicEnvVariable {
-    parent: string;
-    field: string;
-    type: NginxConfigLocationType | 'Domain' | 'Persistence' | undefined;
+    path: string;
+    type: DynamicEnvVariableType;
     placeholder?: string;
+}
+export interface RelativeDirectoryMap {
+    [dynVarPath: string]: { relPath: string };
+}
+export interface FullDirectoryMap {
+    [dynVarPath: string]: { fullPath: string };
 }

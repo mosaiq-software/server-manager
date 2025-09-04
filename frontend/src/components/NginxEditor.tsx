@@ -26,10 +26,8 @@ export const NginxEditor = (props: NginxEditorProps) => {
     }, [config]);
 
     const handleAddServer = () => {
-        const maxIndex = config.servers.reduce((max, srv) => (srv.index > max ? srv.index : max), 0);
         const newServer: ProjectNginxConfig['servers'][number] = {
             serverId: crypto.randomUUID(),
-            index: maxIndex + 1,
             domain: '',
             wildcardSubdomain: false,
             locations: [],
@@ -39,12 +37,10 @@ export const NginxEditor = (props: NginxEditorProps) => {
 
     const handleAddLocation = (serverIndex: number, locationType: NginxConfigLocationType) => {
         let newLocation: ConfigLocation;
-        const maxIndex = config.servers[serverIndex].locations.reduce((max, loc) => (loc.index > max ? loc.index : max), 0);
         switch (locationType) {
             case NginxConfigLocationType.STATIC:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.STATIC,
                     path: '/',
                     serveDir: '',
@@ -55,7 +51,6 @@ export const NginxEditor = (props: NginxEditorProps) => {
             case NginxConfigLocationType.PROXY:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.PROXY,
                     path: '/',
                     proxyPass: '',
@@ -68,7 +63,6 @@ export const NginxEditor = (props: NginxEditorProps) => {
             case NginxConfigLocationType.REDIRECT:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.REDIRECT,
                     path: '/',
                     target: '',
@@ -77,7 +71,6 @@ export const NginxEditor = (props: NginxEditorProps) => {
             case NginxConfigLocationType.CUSTOM:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.CUSTOM,
                     path: '/',
                     content: '',
@@ -118,7 +111,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                 const duplicatePath = server.locations.map((loc) => loc.path).find((path, idx, arr) => arr.indexOf(path) !== idx);
                 return (
                     <Fieldset key={server.serverId}>
-                        <Title order={5}>{`Domain ${String.fromCharCode(64 + server.index)}`}</Title>
+                        <Title order={5}>{`Domain ${server.serverId}`}</Title>
                         <Group
                             justify="space-between"
                             align="flex-end"
@@ -148,7 +141,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                     }}
                                 />
                             </Group>
-                            <Tooltip label={`Remove Domain ${String.fromCharCode(64 + server.index)}`}>
+                            <Tooltip label={`Remove Domain ${server.serverId}`}>
                                 <ActionIcon
                                     onClick={() => handleRemoveServer(server.serverId)}
                                     variant="light"
@@ -178,7 +171,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                                 align="center"
                                             >
                                                 <Group>
-                                                    <Title order={5}>{`${String.fromCharCode(64 + server.index)}${location.index}`}</Title>
+                                                    <Title order={5}>{`${server.serverId}.${location.locationId}`}</Title>
                                                     <Badge
                                                         leftSection={MenuItems[location.type].icon({ size: 14 })}
                                                         variant="outline"
@@ -186,7 +179,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                                         {MenuItems[location.type].title}
                                                     </Badge>
                                                 </Group>
-                                                <Tooltip label={`Remove ${MenuItems[location.type].title} ${String.fromCharCode(64 + server.index)}${location.index}`}>
+                                                <Tooltip label={`Remove ${MenuItems[location.type].title} ${server.serverId}.${location.locationId}`}>
                                                     <ActionIcon
                                                         onClick={() => handleRemoveLocation(server.serverId, location.locationId)}
                                                         variant="light"

@@ -1,11 +1,12 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
-import { DeployableProject, DeploymentState, NginxConfigLocationType, Project } from '@mosaiq/nsm-common/types';
+import { DeployableProject, DeploymentState, DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RelativeDirectoryMap } from '@mosaiq/nsm-common/types';
 import { WORKER_BODY, WORKER_RESPONSE, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { getDotenvForProject } from './secretController';
 import { getWorkerNodeById } from './workerNodeController';
 import { getProject } from './projectController';
 import { workerNodePost } from '@/utils/workerAPI';
+import { stringifyDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
@@ -26,8 +27,9 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId);
 
         const requestedPorts = await requestPortsForProject(project);
+        const ensuredDirs = await getDirectoryMapForProject(project);
 
-        const dotenv = await getDotenvForProject(projectId);
+        const dotenv = await getDotenvForProject(project, requestedPorts, ensuredDirs);
 
         const runCommand = `docker compose -p ${project.id} up --build -d`;
         const body: DeployableProject = {
@@ -55,25 +57,59 @@ export const updateDeploymentLog = async (logId: string, status: DeploymentState
     await updateProjectModelNoDirty(logId, { state: status });
 };
 
-const requestPortsForProject = async (project: Project) => {
+const requestPortsForProject = async (project: Project): Promise<{ proxy: ProxyConfigLocation; port: number }[]> => {
     if (!project.workerNodeId) {
         throw new Error('No worker node assigned to project');
     }
 
-    let proxyCount = 0;
+    const proxies = [];
     for (const server of project.nginxConfig?.servers || []) {
-        proxyCount += server.locations.filter((l) => l.type === NginxConfigLocationType.PROXY).length;
+        for (const location of server.locations) {
+            if (location.type === NginxConfigLocationType.PROXY) {
+                proxies.push(location);
+            }
+        }
     }
-    if (!proxyCount) {
+    if (!proxies.length) {
         return [];
     }
 
-    const ports = await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_FIND_NEXT_FREE_PORTS, { count: proxyCount });
+    const ports = await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_FIND_NEXT_FREE_PORTS, { count: proxies.length });
     if (!ports) {
         throw new Error('Error calling worker node for ports');
     }
     if (!ports.ports) {
         throw new Error('No ports remaining on worker node');
     }
-    return ports.ports;
+    if (ports.ports.length < proxies.length) {
+        throw new Error('Not enough ports remaining on worker node');
+    }
+    return proxies.map((p, i) => ({ proxy: p, port: ports.ports![i] }));
+};
+
+const getDirectoryMapForProject = async (project: Project): Promise<FullDirectoryMap> => {
+    if (!project.workerNodeId) {
+        throw new Error('No worker node assigned to project');
+    }
+
+    const dirs: RelativeDirectoryMap = {};
+    dirs[stringifyDynamicVariablePath(project.id, undefined, undefined, DynamicEnvVariableFields.VOLUME)] = { relPath: `/${project.id}/volume` };
+    for (const server of project.nginxConfig?.servers || []) {
+        for (const location of server.locations) {
+            if (location.type === NginxConfigLocationType.STATIC) {
+                dirs[stringifyDynamicVariablePath(project.id, server.serverId, location.locationId, DynamicEnvVariableFields.DIRECTORY)] = { relPath: `/${project.id}/www/${server.serverId}/${location.locationId}` };
+            }
+        }
+    }
+
+    try {
+        const fullEnsuredPaths = await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_REQUEST_DIRECTORIES, dirs);
+        if (!fullEnsuredPaths) {
+            throw new Error('Error ensuring directories on worker node');
+        }
+        return fullEnsuredPaths;
+    } catch (error) {
+        console.error('Error ensuring directories:', error);
+        throw error;
+    }
 };
