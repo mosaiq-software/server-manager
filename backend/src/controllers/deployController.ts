@@ -1,10 +1,11 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
-import { DeployableProject, DeploymentState } from '@mosaiq/nsm-common/types';
-import { WORKER_BODY, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
+import { DeployableProject, DeploymentState, NginxConfigLocationType, Project } from '@mosaiq/nsm-common/types';
+import { WORKER_BODY, WORKER_RESPONSE, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { getDotenvForProject } from './secretController';
 import { getWorkerNodeById } from './workerNodeController';
 import { getProject } from './projectController';
+import { workerNodePost } from '@/utils/workerAPI';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
@@ -23,6 +24,8 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         }
 
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId);
+
+        const requestedPorts = await requestPortsForProject(project);
 
         const dotenv = await getDotenvForProject(projectId);
 
@@ -47,25 +50,30 @@ export const deployProject = async (projectId: string): Promise<string | undefin
     return logId;
 };
 
-async function workerNodePost<T extends WORKER_ROUTES>(wnId: string, ep: T, body: WORKER_BODY[T]) {
-    const wn = await getWorkerNodeById(wnId);
-    if (!wn) throw new Error(`WorkerNode with id ${wnId} not found`);
-    const url = `${wn.address}${ep}`;
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `${wn.authToken}`,
-        },
-        body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Worker error: ${res.status} - ${text}`);
-    }
-}
-
 export const updateDeploymentLog = async (logId: string, status: DeploymentState, logText: string) => {
     await updateDeploymentLogModel(logId, { status, log: logText });
     await updateProjectModelNoDirty(logId, { state: status });
+};
+
+const requestPortsForProject = async (project: Project) => {
+    if (!project.workerNodeId) {
+        throw new Error('No worker node assigned to project');
+    }
+
+    let proxyCount = 0;
+    for (const server of project.nginxConfig?.servers || []) {
+        proxyCount += server.locations.filter((l) => l.type === NginxConfigLocationType.PROXY).length;
+    }
+    if (!proxyCount) {
+        return [];
+    }
+
+    const ports = await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_FIND_NEXT_FREE_PORTS, { count: proxyCount });
+    if (!ports) {
+        throw new Error('Error calling worker node for ports');
+    }
+    if (!ports.ports) {
+        throw new Error('No ports remaining on worker node');
+    }
+    return ports.ports;
 };

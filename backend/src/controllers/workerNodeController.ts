@@ -1,6 +1,8 @@
 import { WorkerNode } from '@mosaiq/nsm-common/types';
 import { getAllWorkerNodesModel, createWorkerNodeModel, updateWorkerNodeModel, deleteWorkerNodeModel, getWorkerNodeByIdModel } from '@/persistence/workerPersistence';
 import { generate32CharKey } from './projectController';
+import { WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
+import { workerNodePost } from '@/utils/workerAPI';
 
 export const getAllWorkerNodes = async (): Promise<WorkerNode[]> => {
     const workerNodes = await getAllWorkerNodesModel();
