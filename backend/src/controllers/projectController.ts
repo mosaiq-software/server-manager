@@ -61,11 +61,14 @@ export const createProject = async (project: Project) => {
         };
         await createProjectModel(project.id, newProject);
 
-        const repoData = await getRepoData(project.id, project.repoOwner, project.repoName);
-        applyDotenv(repoData.dotenv, project.id);
+        const repoData = await getRepoData(project.id, project.repoOwner, project.repoName, project.repoBranch);
+        await applyDotenv(repoData.dotenv, project.id);
+        const createdProject = await getProject(project.id);
+        if (!createdProject) throw new Error('Failed to retrieve created project');
+        return createdProject;
     } catch (error) {
         console.error('Error creating project:', error);
-        return null;
+        throw error;
     }
 };
 
@@ -78,6 +81,17 @@ export const updateProject = async (id: string, updates: Partial<Project>) => {
         console.error('Error updating project:', error);
         return null;
     }
+};
+
+export const syncProjectToRepoData = async (projectId: string): Promise<Project | undefined> => {
+    const project = await getProjectByIdModel(projectId);
+    if (!project) return undefined;
+
+    const repoData = await getRepoData(project.id, project.repoOwner, project.repoName, project.repoBranch);
+    if (!repoData) return undefined;
+    await applyDotenv(repoData.dotenv, project.id);
+    const updatedProject = await getProject(projectId);
+    return updatedProject;
 };
 
 export const verifyDeploymentKey = async (projectId: string, key: string, fromWeb: boolean): Promise<boolean> => {

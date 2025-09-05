@@ -5,9 +5,9 @@ export interface RepoData {
     dotenv: string;
 }
 
-export const getRepoData = async (projectId: string, repoOwner: string, repoName: string): Promise<RepoData> => {
+export const getRepoData = async (projectId: string, repoOwner: string, repoName: string, repoBranch: string | undefined): Promise<RepoData> => {
     try {
-        await cloneRepository(projectId, repoOwner, repoName);
+        await cloneRepository(projectId, repoOwner, repoName, repoBranch);
         const envFileContents = await getEnvFileFromDir(`${process.env.REPO_SANDBOX_PATH}/${projectId}`);
         return {
             dotenv: envFileContents,
@@ -21,7 +21,13 @@ export const getRepoData = async (projectId: string, repoOwner: string, repoName
 const getEnvFileFromDir = async (dir: string): Promise<string> => {
     if (process.env.PRODUCTION !== 'true') {
         console.log('Not in production mode, skipping .env file retrieval');
-        return 'SECRET_1=This is a secret\nSECRET_2=This is another secret';
+        return `
+# sample .env file
+SECRET_1=aaa
+SECRET_2=and
+OTHER_SECRET=othervalue
+
+`;
     }
     let envFile = '';
     try {
@@ -40,7 +46,7 @@ const getEnvFileFromDir = async (dir: string): Promise<string> => {
     }
 };
 
-const cloneRepository = async (projectId: string, repoOwner: string, repoName: string): Promise<void> => {
+const cloneRepository = async (projectId: string, repoOwner: string, repoName: string, repoBranch: string | undefined): Promise<void> => {
     if (process.env.PRODUCTION !== 'true') {
         console.log('Not in production mode, skipping repository clone');
         return;
@@ -55,7 +61,9 @@ const cloneRepository = async (projectId: string, repoOwner: string, repoName: s
 
     try {
         const gitSshUri = `git@github.com:${repoOwner}/${repoName}.git`;
-        const cmd = `git clone --progress -c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}" ${gitSshUri} ${process.env.REPO_SANDBOX_PATH}/${projectId}`;
+        const branchFlags = repoBranch ? `-b ${repoBranch} --single-branch` : '';
+        const sshFlags = `-c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_PATH}"`;
+        const cmd = `git clone --progress ${branchFlags} ${sshFlags} ${gitSshUri} ${process.env.REPO_SANDBOX_PATH}/${projectId}`;
         const { out: gitOut, code: gitCode } = await execSafe(cmd, 1000 * 60 * 5);
         if (gitCode !== 0) {
             throw new Error(`Git clone exited with code ${gitCode}`);

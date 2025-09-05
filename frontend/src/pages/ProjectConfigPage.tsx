@@ -11,7 +11,7 @@ import { ProjectHeader } from '@/components/ProjectHeader';
 import { assembleDotenv, extractVariables, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
-import { MdOutlineCode, MdOutlineDns, MdOutlineLan, MdOutlineLink, MdOutlineLinkOff, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
+import { MdOutlineCode, MdOutlineDns, MdOutlineLan, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -140,16 +140,24 @@ const ProjectConfigPage = () => {
                 >
                     <Group>
                         <TextInput
+                            w="30%"
                             required
                             label="Repository Owner"
                             value={project.repoOwner}
                             onChange={(e) => updateProject({ repoOwner: e.currentTarget.value })}
                         />
                         <TextInput
+                            w="30%"
                             required
                             label="Repository Name"
                             value={project.repoName}
                             onChange={(e) => updateProject({ repoName: e.currentTarget.value })}
+                        />
+                        <TextInput
+                            w="30%"
+                            label="Repository Branch"
+                            value={project.repoBranch}
+                            onChange={(e) => updateProject({ repoBranch: e.currentTarget.value })}
                         />
                     </Group>
                     <Text
@@ -204,13 +212,28 @@ const ProjectConfigPage = () => {
             />
             <Divider my="sm" />
             <Stack gap="xs">
-                <Title order={5}>Environment Variables</Title>
-                <Text
-                    fz=".75rem"
-                    c="dimmed"
+                <Group
+                    align="flex-start"
+                    justify="flex-start"
                 >
-                    Pulled in from the repository
-                </Text>
+                    <Stack>
+                        <Title order={5}>Environment Variables</Title>
+                        <Text
+                            fz=".75rem"
+                            c="dimmed"
+                        >
+                            Pulled in from the repository
+                        </Text>
+                    </Stack>
+                    <Tooltip label="Sync to Repo">
+                        <ActionIcon
+                            variant="light"
+                            onClick={() => projectCtx.syncProjectToRepo(project.id)}
+                        >
+                            <MdOutlineRefresh />
+                        </ActionIcon>
+                    </Tooltip>
+                </Group>
                 <Grid w="70%">
                     <Grid.Col span={3}>
                         <Title order={6}>Env Variable</Title>

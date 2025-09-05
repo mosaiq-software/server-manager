@@ -19,16 +19,14 @@ export const applyDotenv = async (dotenv: string, projectId: string) => {
 
     const projectSecrets = await getAllSecretsForProjectModel(projectId);
 
-    for (const uSec of updatedSecrets) {
+    const updatedSecretsWithValues = updatedSecrets.map((uSec) => {
         const currentSecret = projectSecrets.find((sec) => sec.secretName === uSec.secretName);
-        if (currentSecret) {
-            uSec.secretValue = currentSecret.secretValue;
-        }
-    }
+        return currentSecret ?? uSec;
+    });
 
     await deleteAllSecretsForProjectEnvModel(projectId);
-    for (const sec of updatedSecrets) {
-        createSecretModel(sec);
+    for (const sec of updatedSecretsWithValues) {
+        await createSecretModel(sec);
     }
 };
 
