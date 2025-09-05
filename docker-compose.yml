@@ -9,7 +9,7 @@ services:
             - common-job
         volumes:
             - type: bind
-              source: ${NSMUSEONLY_WEB_1}
+              source: ${NSM_WWW_PATH}
               target: /www
         env_file:
             - .env
@@ -18,20 +18,44 @@ services:
         depends_on:
             - common-job
         ports:
-            - '${NSMUSEONLY_PORT_1}:${API_PORT}'
+            - '${API_PORT}:${API_PORT}'
         restart: always
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://0.0.0.0:${NSMUSEONLY_PORT_1}/']
+            test: [ 'CMD', 'curl', '-f', 'http://0.0.0.0:${API_PORT}/' ]
             interval: 15s
             timeout: 10s
             retries: 5
             start_period: 30s
         volumes:
             - type: bind
-              source: ${NSMUSEONLY_DB_1}
+              source: ${DATABASE_DIR}
               target: ${DATABASE_DIR}
+              bind:
+                  create_host_path: true
             - type: bind
               source: ${REPO_SANDBOX_PATH}
               target: ${REPO_SANDBOX_PATH}
+              bind:
+                  create_host_path: true
+            - type: bind
+              source: ${GIT_SSH_KEY_DIR}
+              target: ${GIT_SSH_KEY_DIR}
+              bind:
+                  create_host_path: true
+            - type: bind
+              source: ${NSM_PIPE_PATH}
+              target: ${NSM_PIPE_PATH}
+              bind:
+                  create_host_path: true
+            - type: bind
+              source: ${NSM_OUTPUT_PATH}
+              target: ${NSM_OUTPUT_PATH}
+              bind:
+                  create_host_path: true
+            - type: bind
+              source: ${CONTROL_PLANE_WORKER_NGINX_DIR}
+              target: ${CONTROL_PLANE_WORKER_NGINX_DIR}
+              bind:
+                  create_host_path: true
         env_file:
             - .env

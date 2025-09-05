@@ -10,7 +10,7 @@
         "lint": "eslint .",
         "types": "tsc --noemit",
         "prepublish-cleanup": "node ./scripts/pre-publish.mjs",
-        "publish:prod": "npm ci && npm run build && npm run prepublish-cleanup && npm publish ./dist"
+        "publish:prod": "date && npm ci && npm run build && npm run prepublish-cleanup && npm publish ./dist"
     },
     "publishConfig": {
         "registry": "https://registry.mosaiq.dev"

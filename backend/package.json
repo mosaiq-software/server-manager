@@ -8,7 +8,7 @@
         "start": "tsx watch src/index.ts",
         "lint": "eslint .",
         "types": "tsc --noemit",
-        "common:prod": "npm un @mosaiq/nsm-common && npm i @mosaiq/nsm-common@latest",
+        "common:prod": "date && npm un @mosaiq/nsm-common && npm i @mosaiq/nsm-common@latest",
         "common:dev": "npm un @mosaiq/nsm-common && npm i ../common/dist"
     },
     "author": "",

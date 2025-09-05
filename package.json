@@ -17,9 +17,7 @@
         "common:prod": "concurrently \"cd backend && npm run common:prod\" \"cd frontend && npm run common:prod\"",
         "common:dev": "concurrently \"cd backend && npm run common:dev\" \"cd frontend && npm run common:dev\"",
         "postinstall": "cd common && npm i && npm run build && cd .. && concurrently \"cd backend && npm i\" \"cd frontend && npm i\"",
-        "deploy": "npm run executor:start; docker compose -p nsm up --build -d",
-        "executor:start": "pm2 start nsmExecHandle.mjs -i 1",
-        "executor:stop": "pm2 stop nsmExecHandle.mjs"
+        "deploy": "docker compose -p nsm up --build -d"
     },
     "dependencies": {
         "concurrently": "^9.1.0"
