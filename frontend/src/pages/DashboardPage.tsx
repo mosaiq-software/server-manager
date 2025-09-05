@@ -11,6 +11,7 @@ const DashboardPage = () => {
         id: '',
         repoOwner: 'mosaiq-software',
         repoName: '',
+        repoBranch: '',
         allowCICD: false,
     });
     const projectCtx = useProjects();
@@ -44,6 +45,13 @@ const DashboardPage = () => {
                         description="As seen in the URL"
                         value={newProject?.repoName || ''}
                         onChange={(e) => setNewProject({ ...newProject, repoName: e.target.value })}
+                    />
+                    <TextInput
+                        label="Repo Branch"
+                        placeholder="main"
+                        description="The branch to deploy from. Defaults to repo default branch if not set."
+                        value={newProject?.repoBranch || ''}
+                        onChange={(e) => setNewProject({ ...newProject, repoBranch: e.target.value })}
                     />
                     {newProject.repoOwner && newProject.repoName && (
                         <Link

@@ -12,7 +12,7 @@ export const getWorkerNodeById = async (workerId: string): Promise<WorkerNode | 
     return workerNode ?? undefined;
 };
 
-export const createWorkerNode = async (workerId: string, address: string): Promise<WorkerNode> => {
+export const createWorkerNode = async (workerId: string, address: string, port: number): Promise<WorkerNode> => {
     const allWNs = await getAllWorkerNodesModel();
     for (const wn of allWNs) {
         if (wn.workerId === workerId) {
@@ -25,6 +25,7 @@ export const createWorkerNode = async (workerId: string, address: string): Promi
     const wn: WorkerNode = {
         workerId: workerId,
         address: address,
+        port: port,
         authToken: generate32CharKey(),
     };
     await createWorkerNodeModel(wn);

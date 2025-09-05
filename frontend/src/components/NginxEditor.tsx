@@ -26,10 +26,8 @@ export const NginxEditor = (props: NginxEditorProps) => {
     }, [config]);
 
     const handleAddServer = () => {
-        const maxIndex = config.servers.reduce((max, srv) => (srv.index > max ? srv.index : max), 0);
         const newServer: ProjectNginxConfig['servers'][number] = {
             serverId: crypto.randomUUID(),
-            index: maxIndex + 1,
             domain: '',
             wildcardSubdomain: false,
             locations: [],
@@ -39,12 +37,10 @@ export const NginxEditor = (props: NginxEditorProps) => {
 
     const handleAddLocation = (serverIndex: number, locationType: NginxConfigLocationType) => {
         let newLocation: ConfigLocation;
-        const maxIndex = config.servers[serverIndex].locations.reduce((max, loc) => (loc.index > max ? loc.index : max), 0);
         switch (locationType) {
             case NginxConfigLocationType.STATIC:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.STATIC,
                     path: '/',
                     serveDir: '',
@@ -55,7 +51,6 @@ export const NginxEditor = (props: NginxEditorProps) => {
             case NginxConfigLocationType.PROXY:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.PROXY,
                     path: '/',
                     proxyPass: '',
@@ -68,7 +63,6 @@ export const NginxEditor = (props: NginxEditorProps) => {
             case NginxConfigLocationType.REDIRECT:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.REDIRECT,
                     path: '/',
                     target: '',
@@ -77,7 +71,6 @@ export const NginxEditor = (props: NginxEditorProps) => {
             case NginxConfigLocationType.CUSTOM:
                 newLocation = {
                     locationId: crypto.randomUUID(),
-                    index: maxIndex + 1,
                     type: NginxConfigLocationType.CUSTOM,
                     path: '/',
                     content: '',
@@ -118,43 +111,46 @@ export const NginxEditor = (props: NginxEditorProps) => {
                 const duplicatePath = server.locations.map((loc) => loc.path).find((path, idx, arr) => arr.indexOf(path) !== idx);
                 return (
                     <Fieldset key={server.serverId}>
-                        <Title order={5}>{`Domain ${String.fromCharCode(64 + server.index)}`}</Title>
+                        <Title order={5}>{`Domain ${server.serverId}`}</Title>
                         <Group
+                            justify="space-between"
                             align="flex-end"
                             gap="xl"
                         >
-                            <TextInput
-                                required
-                                label="Domain"
-                                placeholder="nsm.mosaiq.dev"
-                                value={server.domain}
-                                onChange={(event) => {
-                                    const newServers = [...config.servers];
-                                    newServers[serverIndex].domain = event.currentTarget.value;
-                                    setConfig({ ...config, servers: newServers });
-                                }}
-                                error={duplicateDomain === server.domain ? 'Duplicate Domain' : undefined}
-                            />
-                            <Tooltip label="Remove Domain Configs">
+                            <Group>
+                                <TextInput
+                                    required
+                                    label="Domain"
+                                    placeholder="nsm.mosaiq.dev"
+                                    value={server.domain}
+                                    onChange={(event) => {
+                                        const newServers = [...config.servers];
+                                        newServers[serverIndex].domain = event.currentTarget.value;
+                                        setConfig({ ...config, servers: newServers });
+                                    }}
+                                    error={duplicateDomain === server.domain ? 'Duplicate Domain' : undefined}
+                                />
+                                <Switch
+                                    label="Wildcard"
+                                    description={`Capture all subdomains? ( *.${server.domain} -> ${server.domain} )`}
+                                    checked={server.wildcardSubdomain}
+                                    onChange={(event) => {
+                                        const newServers = [...config.servers];
+                                        newServers[serverIndex].wildcardSubdomain = event.currentTarget.checked;
+                                        setConfig({ ...config, servers: newServers });
+                                    }}
+                                />
+                            </Group>
+                            <Tooltip label={`Remove Domain ${server.serverId}`}>
                                 <ActionIcon
                                     onClick={() => handleRemoveServer(server.serverId)}
-                                    variant="subtle"
+                                    variant="light"
                                     color="red"
                                     size={'input-sm'}
                                 >
                                     <MdOutlineDelete />
                                 </ActionIcon>
                             </Tooltip>
-                            <Switch
-                                label="Wildcard"
-                                description={`Route all subdomains to this server? ( *.${server.domain} -> ${server.domain} )`}
-                                checked={server.wildcardSubdomain}
-                                onChange={(event) => {
-                                    const newServers = [...config.servers];
-                                    newServers[serverIndex].wildcardSubdomain = event.currentTarget.checked;
-                                    setConfig({ ...config, servers: newServers });
-                                }}
-                            />
                         </Group>
                         <Space h="md" />
                         <Text>Resources:</Text>
@@ -170,12 +166,23 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                             w="300px"
                                             gap="xs"
                                         >
-                                            <Group>
-                                                <Title order={6}>{`${String.fromCharCode(64 + server.index)}${location.index} : ${MenuItems[location.type].title}`}</Title>
-                                                <Tooltip label={`Remove ${MenuItems[location.type].title}`}>
+                                            <Group
+                                                justify="space-between"
+                                                align="center"
+                                            >
+                                                <Group>
+                                                    <Title order={5}>{`${server.serverId}.${location.locationId}`}</Title>
+                                                    <Badge
+                                                        leftSection={MenuItems[location.type].icon({ size: 14 })}
+                                                        variant="outline"
+                                                    >
+                                                        {MenuItems[location.type].title}
+                                                    </Badge>
+                                                </Group>
+                                                <Tooltip label={`Remove ${MenuItems[location.type].title} ${server.serverId}.${location.locationId}`}>
                                                     <ActionIcon
                                                         onClick={() => handleRemoveLocation(server.serverId, location.locationId)}
-                                                        variant="subtle"
+                                                        variant="light"
                                                         color="red"
                                                         size={'input-xs'}
                                                     >
@@ -261,15 +268,16 @@ const RenderLocation = (props: RenderLocationProps) => {
                     value={props.location.path}
                     label="Path"
                     placeholder="/"
-                    description={props.domain && props.location.path.startsWith('/') ? `https://${props.domain}${props.location.path}` : ''}
+                    description={(props.domain ? (props.location.path.startsWith('/') ? `https://${props.domain}${props.location.path}` : '') : '') + (props.location.spa ? ' (SPA must be /)' : '')}
                     onChange={(e) => props.location.type === NginxConfigLocationType.STATIC && props.onChange({ ...props.location, path: e.currentTarget.value })}
                     error={props.duplicatePath ? 'Duplicate Path' : undefined}
+                    readOnly={!!props.location.spa}
                 />
                 <Switch
                     label="Single Page Application"
                     description="Serve index.html for all non-file requests"
                     checked={!!props.location.spa}
-                    onChange={(e) => props.location.type === NginxConfigLocationType.STATIC && props.onChange({ ...props.location, spa: e.currentTarget.checked })}
+                    onChange={(e) => props.location.type === NginxConfigLocationType.STATIC && props.onChange({ ...props.location, spa: e.currentTarget.checked, path: e.currentTarget.checked ? '/' : props.location.path })}
                 />
                 <Switch
                     label="Force Allow CORS"
@@ -356,7 +364,7 @@ const RenderLocation = (props: RenderLocationProps) => {
                     pl="xs"
                 >{`${props.location.replications ?? 1} replicas x ${props.workerNodes} workers = ${(props.location.replications ?? 1) * props.workerNodes} total instances of the service`}</Text> */}
                 <Switch
-                    label="Support WebSocket"
+                    label="Support WebSockets"
                     checked={!!props.location.websocketSupport}
                     onChange={(e) => props.location.type === NginxConfigLocationType.PROXY && props.onChange({ ...props.location, websocketSupport: e.currentTarget.checked })}
                 />

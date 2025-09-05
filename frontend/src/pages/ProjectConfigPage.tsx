@@ -1,17 +1,17 @@
 import { ActionIcon, ActionIconGroup, Alert, Button, Center, Combobox, CopyButton, Divider, Fieldset, Grid, Group, Loader, Menu, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { DeploymentState, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, Secret } from '@mosaiq/nsm-common/types';
+import { DeploymentState, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '@/utils/api';
 import { EditableTextInput } from '@/components/EditableTextInput';
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
-import { assembleDotenv, extractVariables } from '@mosaiq/nsm-common/secretUtil';
+import { assembleDotenv, extractVariables, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
-import { MdOutlineLan, MdOutlineLinkOff, MdOutlineWeb } from 'react-icons/md';
+import { MdOutlineCode, MdOutlineDns, MdOutlineLan, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -140,16 +140,24 @@ const ProjectConfigPage = () => {
                 >
                     <Group>
                         <TextInput
+                            w="30%"
                             required
                             label="Repository Owner"
                             value={project.repoOwner}
                             onChange={(e) => updateProject({ repoOwner: e.currentTarget.value })}
                         />
                         <TextInput
+                            w="30%"
                             required
                             label="Repository Name"
                             value={project.repoName}
                             onChange={(e) => updateProject({ repoName: e.currentTarget.value })}
+                        />
+                        <TextInput
+                            w="30%"
+                            label="Repository Branch"
+                            value={project.repoBranch}
+                            onChange={(e) => updateProject({ repoBranch: e.currentTarget.value })}
                         />
                     </Group>
                     <Text
@@ -204,13 +212,28 @@ const ProjectConfigPage = () => {
             />
             <Divider my="sm" />
             <Stack gap="xs">
-                <Title order={5}>Environment Variables</Title>
-                <Text
-                    fz=".75rem"
-                    c="dimmed"
+                <Group
+                    align="flex-start"
+                    justify="flex-start"
                 >
-                    Pulled in from the repository
-                </Text>
+                    <Stack>
+                        <Title order={5}>Environment Variables</Title>
+                        <Text
+                            fz=".75rem"
+                            c="dimmed"
+                        >
+                            Pulled in from the repository
+                        </Text>
+                    </Stack>
+                    <Tooltip label="Sync to Repo">
+                        <ActionIcon
+                            variant="light"
+                            onClick={() => projectCtx.syncProjectToRepo(project.id)}
+                        >
+                            <MdOutlineRefresh />
+                        </ActionIcon>
+                    </Tooltip>
+                </Group>
                 <Grid w="70%">
                     <Grid.Col span={3}>
                         <Title order={6}>Env Variable</Title>
@@ -241,15 +264,24 @@ interface EnvVarRowProps {
     vars: DynamicEnvVariable[];
 }
 const EnvVarRow = (props: EnvVarRowProps) => {
+    const EnvItems = {
+        [NginxConfigLocationType.CUSTOM]: { icon: MdOutlineCode, desc: 'Custom location block', title: 'Custom NGINX Block' },
+        [NginxConfigLocationType.REDIRECT]: { icon: MdOutlineLink, desc: 'Redirect requests to another URL', title: 'Redirect Link' },
+        [NginxConfigLocationType.PROXY]: { icon: MdOutlineDns, desc: 'Proxy requests to another server', title: 'API Service' },
+        [NginxConfigLocationType.STATIC]: { icon: MdOutlineWeb, desc: 'Serve static files from a directory', title: 'Static Page' },
+        [UpperDynamicEnvVariableType.GENERAL]: { icon: MdOutlineLan, desc: 'General project setting', title: 'General' },
+        [UpperDynamicEnvVariableType.DOMAIN]: { icon: MdOutlineUmbrella, desc: 'The domain of a server block', title: 'Domain' },
+    };
     const combobox = useCombobox();
     const { secret } = props;
-    const groupedVars: { [key: string]: DynamicEnvVariable[] } = {};
+    const groupedVars: { [key: string]: { vars: DynamicEnvVariable[]; menuItem: (typeof EnvItems)[keyof typeof EnvItems] | undefined } } = {};
     props.vars.forEach((varItem) => {
-        const parent = varItem.parent;
+        const dynVar = parseDynamicVariablePath(varItem.path);
+        const parent = `${dynVar.projectId}${dynVar.serverId ? `.${dynVar.serverId}` : ''}${dynVar.locationId ? `.${dynVar.locationId}` : ''}`;
         if (!groupedVars[parent]) {
-            groupedVars[parent] = [];
+            groupedVars[parent] = { vars: [], menuItem: varItem.type ? EnvItems[varItem.type] : undefined };
         }
-        groupedVars[parent].push(varItem);
+        groupedVars[parent].vars.push(varItem);
     });
     return (
         <>
@@ -304,31 +336,39 @@ const EnvVarRow = (props: EnvVarRowProps) => {
                                         {Object.entries(groupedVars).map(([parent, gr], i) => (
                                             <Combobox.Group
                                                 key={parent}
-                                                label={parent}
+                                                label={
+                                                    <Group align="center">
+                                                        {gr.menuItem && <gr.menuItem.icon />}
+                                                        <Text fz="xs">{parent}</Text>
+                                                    </Group>
+                                                }
                                             >
-                                                {gr.map((varItem, i) => (
-                                                    <Combobox.Option
-                                                        key={varItem.field}
-                                                        value={`<<<${varItem.parent}.${varItem.field}>>>`}
-                                                    >
-                                                        <Group gap={'xs'}>
-                                                            <Text
-                                                                fz="sm"
-                                                                fw={500}
-                                                            >
-                                                                {varItem.field}
-                                                            </Text>
-                                                            {!!varItem.placeholder?.length && (
+                                                {gr.vars.map((varItem, i) => {
+                                                    const dynVar = parseDynamicVariablePath(varItem.path);
+                                                    return (
+                                                        <Combobox.Option
+                                                            key={varItem.path}
+                                                            value={varItem.path}
+                                                        >
+                                                            <Group gap={'xs'}>
                                                                 <Text
-                                                                    fz="xs"
-                                                                    c="dimmed"
+                                                                    fz="sm"
+                                                                    fw={500}
                                                                 >
-                                                                    {varItem.placeholder}
+                                                                    {varItem.path}
                                                                 </Text>
-                                                            )}
-                                                        </Group>
-                                                    </Combobox.Option>
-                                                ))}
+                                                                {!!varItem.placeholder?.length && (
+                                                                    <Text
+                                                                        fz="xs"
+                                                                        c="dimmed"
+                                                                    >
+                                                                        {varItem.placeholder}
+                                                                    </Text>
+                                                                )}
+                                                            </Group>
+                                                        </Combobox.Option>
+                                                    );
+                                                })}
                                             </Combobox.Group>
                                         ))}
                                     </ScrollArea.Autosize>

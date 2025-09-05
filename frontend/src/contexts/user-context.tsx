@@ -1,27 +1,11 @@
-import { User } from '@mosaiq/nsm-common';
 import React, { createContext, useContext, useState } from 'react';
 
-type UserContextType = {
-    user: User | undefined;
-};
+type UserContextType = {};
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const UserProvider: React.FC<any> = ({ children }) => {
-    const [user, setUser] = useState<User | undefined>(undefined);
-
-    // Add functions for handling the user's data. Keep this to be only
-    // the most essential topics, since bloating a context is an easy way to seriously bog down an app
-
-    return (
-        <UserContext.Provider
-            value={{
-                user,
-            }}
-        >
-            {children}
-        </UserContext.Provider>
-    );
+    return <UserContext.Provider value={{}}>{children}</UserContext.Provider>;
 };
 
 const useUser = () => {

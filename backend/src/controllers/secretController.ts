@@ -1,10 +1,10 @@
 import { createSecretModel, deleteAllSecretsForProjectEnvModel, getAllSecretsForProjectModel, updateSecretModel } from '@/persistence/secretPersistence';
-import { assembleDotenv, parseDotenv } from '@mosaiq/nsm-common/secretUtil';
-import { Project, ProxyConfigLocation, RedirectConfigLocation, Secret } from '@mosaiq/nsm-common/types';
+import { assembleDotenv, parseDotenv, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
+import { DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RedirectConfigLocation, Secret } from '@mosaiq/nsm-common/types';
 import { updateProjectModelNoDirty } from '@/persistence/projectPersistence';
 
-export const getDotenvForProject = async (projectId: string): Promise<string> => {
-    const secrets = await getAllSecretsForProjectModel(projectId);
+export const getDotenvForProject = async (project: Project, requestedPorts: { proxyLocationId: string; port: number }[], dirMap: FullDirectoryMap): Promise<string> => {
+    const secrets = (project.secrets || []).map((sec) => fillSecret(sec, project, requestedPorts, dirMap));
     const dotenv = assembleDotenv(secrets);
     return dotenv;
 };
@@ -19,16 +19,14 @@ export const applyDotenv = async (dotenv: string, projectId: string) => {
 
     const projectSecrets = await getAllSecretsForProjectModel(projectId);
 
-    for (const uSec of updatedSecrets) {
+    const updatedSecretsWithValues = updatedSecrets.map((uSec) => {
         const currentSecret = projectSecrets.find((sec) => sec.secretName === uSec.secretName);
-        if (currentSecret) {
-            uSec.secretValue = currentSecret.secretValue;
-        }
-    }
+        return currentSecret ?? uSec;
+    });
 
     await deleteAllSecretsForProjectEnvModel(projectId);
-    for (const sec of updatedSecrets) {
-        createSecretModel(sec);
+    for (const sec of updatedSecretsWithValues) {
+        await createSecretModel(sec);
     }
 };
 
@@ -37,50 +35,51 @@ export const updateEnvironmentVariable = async (projectId: string, sec: Secret) 
     await updateProjectModelNoDirty(projectId, { dirtyConfig: true });
 };
 
-// const getValueForVariable = (varName: string, project: Project): string | undefined => {
-//     const [parent, field] = varName.replace('<<<', '').replace('>>>', '').split('.');
-//     if (parent === 'General') {
-//         if (field === 'WorkerNodeId') {
-//             return project.workerNodeId;
-//         }
-//     }
-//     if (parent === 'Persistence') {
-//         // Volume1 - Volume5
-//         return ''; //TODO dynamic dirs
-//     }
-//     if (parent.length === 1 || parent.length === 2) {
-//         // Single letter, A-Z is root server
-//         const serverIndex = parent.charCodeAt(0) - 64;
-//         if (serverIndex < 1 || serverIndex > 26) {
-//             return undefined;
-//         }
-//         const server = project.nginxConfig?.servers.find((s) => s.index === serverIndex);
-//         if (!server) {
-//             return undefined;
-//         }
-//         if (field === 'Domain') {
-//             return server.domain;
-//         }
-//         const locationIndex = parent.substring(1) ? parseInt(parent.substring(1)) : -1;
-//         if (locationIndex === -1) {
-//             return undefined;
-//         }
-//         const location = server.locations.find((loc) => loc.index === locationIndex);
-//         if (!location) {
-//             return undefined;
-//         }
-//         if (field === 'URL') {
-//             return `https://${server.domain}${location.path === '/' ? '' : location.path}`;
-//         }
-//         if (field === 'Path') {
-//             return location.path;
-//         }
-//         if (field === 'Port') {
-//             // TODO dynamic port
-//             // return (location as ProxyConfigLocation).;
-//         }
-//         if (field === 'Target') {
-//             return (location as RedirectConfigLocation).target;
-//         }
-//     }
-// };
+const fillSecret = (secret: Secret, project: Project, requestedPorts: { proxyLocationId: string; port: number }[], dirMap: FullDirectoryMap): Secret => {
+    if (!secret.variable) {
+        return secret;
+    }
+    try {
+        const dynVarData = parseDynamicVariablePath(secret.secretValue);
+        const server = project.nginxConfig?.servers.find((s) => s.serverId === dynVarData.serverId);
+        const location = server?.locations.find((l) => l.locationId === dynVarData.locationId);
+        switch (dynVarData.field) {
+            case DynamicEnvVariableFields.WORKER_NODE_ID:
+                return { ...secret, secretValue: project.workerNodeId || '' };
+            case DynamicEnvVariableFields.DOMAIN:
+                return { ...secret, secretValue: server?.domain || '' };
+            case DynamicEnvVariableFields.URL:
+                return { ...secret, secretValue: `https://${server?.domain || ''}${location?.path === '/' ? '' : location?.path}` };
+            case DynamicEnvVariableFields.PATH:
+                return { ...secret, secretValue: location?.path || '' };
+            case DynamicEnvVariableFields.DIRECTORY:
+                if (location?.type === NginxConfigLocationType.STATIC && dirMap[secret.secretValue]) {
+                    return { ...secret, secretValue: dirMap[secret.secretValue].fullPath };
+                }
+                return secret;
+            case DynamicEnvVariableFields.PORT:
+                if (location?.type === NginxConfigLocationType.PROXY) {
+                    const req = requestedPorts.find((r) => r.proxyLocationId === location.locationId);
+                    if (req) {
+                        return { ...secret, secretValue: req.port.toString() };
+                    }
+                }
+                return secret;
+            case DynamicEnvVariableFields.TARGET:
+                if (location?.type === NginxConfigLocationType.REDIRECT) {
+                    return { ...secret, secretValue: (location as RedirectConfigLocation).target || '' };
+                }
+                return secret;
+            case DynamicEnvVariableFields.VOLUME:
+                if (dirMap[secret.secretValue]) {
+                    return { ...secret, secretValue: dirMap[secret.secretValue].fullPath };
+                }
+                return secret;
+            default:
+                return secret;
+        }
+    } catch (error) {
+        console.error(`Error parsing dynamic variable path: ${secret.secretValue}`, error);
+        return secret;
+    }
+};

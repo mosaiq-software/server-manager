@@ -9,6 +9,7 @@ type ProjectContextType = {
     create: (newProject: Project) => Promise<void>;
     update: (id: string, updatedProject: Partial<Project>, clientOnly?: boolean) => Promise<void>;
     updateSecrets: (projectId: string, secrets: Secret[]) => Promise<void>;
+    syncProjectToRepo: (projectId: string) => Promise<void>;
 };
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -37,8 +38,11 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
 
     const handleCreateProject = async (newProject: Project) => {
         try {
-            await apiPost(API_ROUTES.POST_CREATE_PROJECT, {}, newProject, 'AUTH TOKEN...');
-            setProjects((prev) => [...prev, newProject]);
+            const created = await apiPost(API_ROUTES.POST_CREATE_PROJECT, {}, newProject, 'AUTH TOKEN...');
+            if (!created) {
+                throw new Error('Creation failed');
+            }
+            setProjects((prev) => [...prev, created]);
             notifications.show({
                 title: 'Success',
                 message: 'Project created successfully',
@@ -80,6 +84,27 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
         }
     };
 
+    const syncProjectToRepo = async (projectId: string) => {
+        try {
+            const updatedProject = await apiPost(API_ROUTES.POST_SYNC_TO_REPO, { projectId }, {}, 'AUTH TOKEN...');
+            if (!updatedProject) {
+                throw new Error('Sync failed');
+            }
+            handleUpdateProject(projectId, updatedProject, true);
+            notifications.show({
+                title: 'Success',
+                message: 'Project synced successfully',
+                color: 'green',
+            });
+        } catch (error) {
+            notifications.show({
+                title: 'Error',
+                message: 'Failed to sync project',
+                color: 'red',
+            });
+        }
+    };
+
     return (
         <ProjectContext.Provider
             value={{
@@ -87,6 +112,7 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
                 create: handleCreateProject,
                 update: handleUpdateProject,
                 updateSecrets,
+                syncProjectToRepo,
             }}
         >
             {children}

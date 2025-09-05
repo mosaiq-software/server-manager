@@ -6,6 +6,7 @@ export interface ProjectModelType {
     state: DeploymentState;
     repoOwner: string;
     repoName: string;
+    repoBranch?: string;
     deploymentKey: string;
     allowCICD: boolean;
     timeout?: number;
@@ -25,6 +26,7 @@ ProjectModel.init(
         state: DataTypes.STRING,
         repoOwner: DataTypes.STRING,
         repoName: DataTypes.STRING,
+        repoBranch: DataTypes.STRING,
         deploymentKey: DataTypes.STRING,
         allowCICD: DataTypes.BOOLEAN,
         timeout: DataTypes.NUMBER,

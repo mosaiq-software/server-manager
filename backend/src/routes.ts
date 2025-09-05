@@ -1,4 +1,4 @@
-import { createProject, getAllProjects, getProject, resetDeploymentKey, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
+import { createProject, getAllProjects, getProject, resetDeploymentKey, syncProjectToRepoData, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
 import { deployProject, updateDeploymentLog } from '@/controllers/deployController';
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 import express from 'express';
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
         res.status(200).send('Hello from the NSM API');
     } catch (error) {
         console.error(error);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -38,7 +38,7 @@ router.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting user', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -62,7 +62,7 @@ router.get(API_ROUTES.GET_DEPLOY_WEB, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting user', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -82,7 +82,7 @@ router.get(API_ROUTES.GET_PROJECT, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting project', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -93,7 +93,7 @@ router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting projects', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -113,7 +113,7 @@ router.get(API_ROUTES.GET_DEPLOY_LOG, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting deploy log', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -124,7 +124,7 @@ router.get(API_ROUTES.GET_WORKER_NODES, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting worker nodes', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -135,12 +135,12 @@ router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
             res.status(400).send('Invalid request body');
             return;
         }
-        await createProject(body);
-        const response: API_RETURN[API_ROUTES.POST_CREATE_PROJECT] = undefined;
+        const project = await createProject(body);
+        const response: API_RETURN[API_ROUTES.POST_CREATE_PROJECT] = project;
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error resetting deployment key', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -157,7 +157,7 @@ router.post(API_ROUTES.POST_UPDATE_PROJECT, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error updating project', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -173,7 +173,7 @@ router.post(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error resetting deployment key', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -189,7 +189,27 @@ router.post(API_ROUTES.POST_UPDATE_ENV_VAR, async (req, res) => {
         res.status(200).send('Environment variable updated');
     } catch (e: any) {
         console.error('Error updating environment variable', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
+    }
+});
+
+router.post(API_ROUTES.POST_SYNC_TO_REPO, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_SYNC_TO_REPO];
+    try {
+        if (!params.projectId) {
+            res.status(400).send('No projectId');
+            return;
+        }
+        const project = await syncProjectToRepoData(params.projectId);
+        if (!project) {
+            res.status(404).send('Project not found');
+            return;
+        }
+        const response: API_RETURN[API_ROUTES.POST_SYNC_TO_REPO] = project;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error syncing project to repo data', e);
+        res.status(500).send();
     }
 });
 
@@ -205,7 +225,7 @@ router.post(API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error updating deployment log', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -216,12 +236,12 @@ router.post(API_ROUTES.POST_CREATE_WORKER_NODE, async (req, res) => {
             res.status(400).send('Invalid request body');
             return;
         }
-        const workerNode = await createWorkerNode(body.workerId, body.address);
+        const workerNode = await createWorkerNode(body.workerId, body.address, body.port);
         const response: API_RETURN[API_ROUTES.POST_CREATE_WORKER_NODE] = workerNode;
         res.status(201).json(response);
     } catch (e: any) {
         console.error('Error creating worker node', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -238,7 +258,7 @@ router.post(API_ROUTES.POST_UPDATE_WORKER_NODE, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error updating worker node', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -254,7 +274,7 @@ router.post(API_ROUTES.POST_DELETE_WORKER_NODE, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error deleting worker node', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 
@@ -270,7 +290,7 @@ router.post(API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error regenerating worker node key', e);
-        res.status(500).send('Internal server error');
+        res.status(500).send();
     }
 });
 

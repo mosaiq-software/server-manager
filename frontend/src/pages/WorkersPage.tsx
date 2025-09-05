@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Center, Group, Loader, Modal, PasswordInput, Stack, Table, Text, TextInput, Title } from '@mantine/core';
+import { Button, ButtonGroup, Center, Group, Loader, Modal, NumberInput, PasswordInput, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import React, { useEffect, useState } from 'react';
 import { EditableTextInput } from '@/components/EditableTextInput';
@@ -11,6 +11,7 @@ const WorkersPage = () => {
     const [newWorker, setNewWorker] = useState<WorkerNode>({
         workerId: '',
         address: '',
+        port: 0,
         authToken: '',
     });
 
@@ -25,7 +26,23 @@ const WorkersPage = () => {
     const isValidNetworkAddress = (address?: string) => {
         if (!address) return false;
         const parts = address.split(':');
-        return parts.length === 2 && parts[0].length > 0 && parts[1].length > 1 && !isNaN(Number(parts[1]));
+        const structure = parts.length === 2 && parts[0].length > 0 && parts[1].length > 1 && !isNaN(Number(parts[1]));
+        if (!structure) return false;
+        const url = 'http://' + address;
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    const isValidName = (name?: string) => {
+        if (!name) return false;
+        const sanitized = sanitizeName(name);
+        const used = workerCtx.workers.find((w) => w.workerId === sanitized);
+        if (used) return false;
+        return sanitized.length > 0 && sanitized === name;
     };
 
     return (
@@ -44,14 +61,23 @@ const WorkersPage = () => {
                         value={newWorker.workerId || ''}
                         onChange={(e) => setNewWorker({ ...newWorker, workerId: e.target.value })}
                         onBlur={() => setNewWorker({ ...newWorker, workerId: sanitizeName(newWorker.workerId) })}
+                        error={newWorker.workerId && !isValidName(newWorker.workerId) ? 'Invalid Worker ID' : undefined}
                     />
                     <TextInput
-                        label="Address & Port"
-                        placeholder="192.168.1.206:1234"
-                        description="The address:port of the worker node. Can be local or remote worker. Ensure remote ports are forwarded."
+                        label="Address"
+                        placeholder="192.168.1.206"
+                        description="The address of the worker node. Must be on the local network."
                         value={newWorker.address || ''}
                         onChange={(e) => setNewWorker({ ...newWorker, address: e.target.value })}
-                        error={!isValidNetworkAddress(newWorker.address) ? 'Invalid address:port format' : undefined}
+                    />
+                    <NumberInput
+                        label="Port"
+                        placeholder="1234"
+                        description="The port of the worker node. Used to contact the worker."
+                        value={newWorker.port}
+                        min={1}
+                        max={65535}
+                        onChange={(e) => setNewWorker({ ...newWorker, port: Number(e) || 0 })}
                     />
                     <Group justify="space-between">
                         <Button
@@ -63,10 +89,18 @@ const WorkersPage = () => {
                         <Button
                             variant="filled"
                             onClick={async () => {
-                                if (!isValidNetworkAddress(newWorker.address)) {
+                                if (!isValidNetworkAddress(newWorker.address + ':' + newWorker.port)) {
                                     notifications.show({
                                         title: 'Invalid address:port',
                                         message: 'Please enter a valid address:port format.',
+                                        color: 'red',
+                                    });
+                                    return;
+                                }
+                                if (!isValidName(newWorker.workerId)) {
+                                    notifications.show({
+                                        title: 'Invalid Worker ID',
+                                        message: 'Please enter a valid Worker ID.',
                                         color: 'red',
                                     });
                                     return;
@@ -147,6 +181,7 @@ const WorkersPage = () => {
                     <Table.Tr>
                         <Table.Th>Worker ID</Table.Th>
                         <Table.Th>Address</Table.Th>
+                        <Table.Th>Port</Table.Th>
                         <Table.Th>Key</Table.Th>
                         <Table.Th>Status</Table.Th>
                         <Table.Th>Actions</Table.Th>
@@ -157,6 +192,7 @@ const WorkersPage = () => {
                         <Table.Tr key={worker.workerId}>
                             <Table.Td>{worker.workerId}</Table.Td>
                             <Table.Td>{worker.address}</Table.Td>
+                            <Table.Td>{worker.port}</Table.Td>
                             <Table.Td>
                                 <PasswordInput
                                     value={worker.authToken}
@@ -164,7 +200,7 @@ const WorkersPage = () => {
                                 />
                             </Table.Td>
                             <Table.Td>
-                                <WorkerStatus address={worker.address} />
+                                <WorkerStatus worker={worker} />
                             </Table.Td>
                             <Table.Td>
                                 <ButtonGroup>
@@ -190,7 +226,7 @@ const WorkersPage = () => {
     );
 };
 
-const WorkerStatus = (props: { address: string }) => {
+const WorkerStatus = (props: { worker: WorkerNode }) => {
     const [ping, setPing] = useState<number | null>(null);
     const [status, setStatus] = useState<string | null>(null);
     const [icon, setIcon] = useState<string>('⚫');
@@ -199,7 +235,7 @@ const WorkerStatus = (props: { address: string }) => {
         const checkPing = async () => {
             try {
                 const start = performance.now();
-                const response = await fetch(`http://${props.address}`, {
+                const response = await fetch(`http://${props.worker.address}:${props.worker.port}`, {
                     method: 'GET',
                     signal: AbortSignal.timeout(5000),
                 });
@@ -221,7 +257,7 @@ const WorkerStatus = (props: { address: string }) => {
         checkPing();
         const interval = setInterval(checkPing, 1000 * 10);
         return () => clearInterval(interval);
-    }, [props.address]);
+    }, [props.worker.address, props.worker.port]);
 
     if (status === null && ping === null) {
         return (
