@@ -1,6 +1,6 @@
 import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
 import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
-import { applyDotenv, getAllSecretsForProject } from './secretController';
+import { applyRepoData, getAllSecretsForProject } from './secretController';
 import { getAllDeploymentLogs } from '@/persistence/deploymentLogPersistence';
 import { getRepoData } from '@/utils/repositoryUtils';
 
@@ -32,6 +32,8 @@ export const getProject = async (projectId: string) => {
         timeout: projectData.timeout,
         nginxConfig: projectData.nginxConfigJson ? JSON.parse(projectData.nginxConfigJson) : undefined,
         workerNodeId: projectData.workerNodeId,
+        hasDockerCompose: projectData.hasDockerCompose,
+        hasDotenv: projectData.hasDotenv,
     };
 
     return project;
@@ -61,9 +63,7 @@ export const createProject = async (project: Project) => {
         };
         await createProjectModel(project.id, newProject);
 
-        const repoData = await getRepoData(project.id, project.repoOwner, project.repoName, project.repoBranch);
-        await applyDotenv(repoData.dotenv, project.id);
-        const createdProject = await getProject(project.id);
+        const createdProject = await syncProjectToRepoData(project.id);
         if (!createdProject) throw new Error('Failed to retrieve created project');
         return createdProject;
     } catch (error) {
@@ -85,11 +85,15 @@ export const updateProject = async (id: string, updates: Partial<Project>) => {
 
 export const syncProjectToRepoData = async (projectId: string): Promise<Project | undefined> => {
     const project = await getProjectByIdModel(projectId);
-    if (!project) return undefined;
+    if (!project) {
+        throw new Error('Project not found');
+    }
 
     const repoData = await getRepoData(project.id, project.repoOwner, project.repoName, project.repoBranch);
-    if (!repoData) return undefined;
-    await applyDotenv(repoData.dotenv, project.id);
+    if (!repoData) {
+        throw new Error('Failed to retrieve repository data');
+    }
+    await applyRepoData(repoData, project.id);
     const updatedProject = await getProject(projectId);
     return updatedProject;
 };

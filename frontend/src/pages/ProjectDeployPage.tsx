@@ -1,4 +1,4 @@
-import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title, Code, Tooltip } from '@mantine/core';
+import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title, Code, Tooltip, Alert } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeployLogHeader, DeploymentState, Project } from '@mosaiq/nsm-common/types';
@@ -192,6 +192,7 @@ const ProjectDeployPage = () => {
                     variant="light"
                     color="green"
                     leftSection={<MdOutlineRocketLaunch />}
+                    disabled={!project.hasDockerCompose}
                 >
                     Deploy
                 </Button>
@@ -200,9 +201,19 @@ const ProjectDeployPage = () => {
                     variant="light"
                     color="red"
                     leftSection={<MdOutlineDelete />}
+                    disabled={!project.hasDockerCompose}
                 >
                     Teardown
                 </Button>
+                {!project.hasDockerCompose && (
+                    <Alert
+                        color="red"
+                        variant="filled"
+                        title="Undeployable Project"
+                    >
+                        This project does not have a Docker Compose file configured.
+                    </Alert>
+                )}
             </Group>
             <Group
                 align="flex-end"

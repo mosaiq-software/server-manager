@@ -22,6 +22,7 @@ const ProjectConfigPage = () => {
     const [project, setProject] = useState<Project | undefined | null>(undefined);
     const [secrets, setSecrets] = useState<Secret[]>([]);
     const [dynamicEnvVariables, setDynamicEnvVariables] = useState<DynamicEnvVariable[]>([]);
+    const [syncing, setSyncing] = useState(false);
 
     const varCombobox = useCombobox({
         onDropdownClose: () => varCombobox.resetSelectedOption(),
@@ -76,6 +77,13 @@ const ProjectConfigPage = () => {
         }
     };
 
+    const handleSyncToRepo = async () => {
+        if (!project) return;
+        setSyncing(true);
+        await projectCtx.syncProjectToRepo(project.id);
+        setSyncing(false);
+    };
+
     if (project === undefined) {
         return (
             <Center>
@@ -89,6 +97,21 @@ const ProjectConfigPage = () => {
             <Center>
                 <Stack>
                     <Title order={4}>Project &quot;{projectId}&quot; not found!</Title>
+                </Stack>
+            </Center>
+        );
+    }
+
+    if (syncing) {
+        return (
+            <Center
+                w="100%"
+                h="100%"
+            >
+                <Stack align="center">
+                    <Loader />
+                    <Title>Syncing to repository...</Title>
+                    <Text>This may take a few moments</Text>
                 </Stack>
             </Center>
         );
@@ -228,11 +251,20 @@ const ProjectConfigPage = () => {
                     <Tooltip label="Sync to Repo">
                         <ActionIcon
                             variant="light"
-                            onClick={() => projectCtx.syncProjectToRepo(project.id)}
+                            onClick={handleSyncToRepo}
                         >
                             <MdOutlineRefresh />
                         </ActionIcon>
                     </Tooltip>
+                    {!project.hasDotenv && (
+                        <Alert
+                            color="yellow"
+                            variant="light"
+                            title="No Env File"
+                        >
+                            This root of this project does not have any files starting with `.env`.
+                        </Alert>
+                    )}
                 </Group>
                 <Grid w="70%">
                     <Grid.Col span={3}>

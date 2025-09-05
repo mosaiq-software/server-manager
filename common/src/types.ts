@@ -14,6 +14,8 @@ export interface Project {
     dirtyConfig?: boolean;
     nginxConfig?: ProjectNginxConfig;
     workerNodeId?: string;
+    hasDockerCompose?: boolean;
+    hasDotenv?: boolean;
 }
 
 export interface Secret {

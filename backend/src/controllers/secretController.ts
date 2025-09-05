@@ -1,7 +1,8 @@
 import { createSecretModel, deleteAllSecretsForProjectEnvModel, getAllSecretsForProjectModel, updateSecretModel } from '@/persistence/secretPersistence';
-import { assembleDotenv, parseDotenv, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
+import { assembleDotenv, parseDotenv, parseDynamicVariablePath, extractSecretsFromDockerCompose, buildRawVarsIntoSecrets } from '@mosaiq/nsm-common/secretUtil';
 import { DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RedirectConfigLocation, Secret } from '@mosaiq/nsm-common/types';
 import { updateProjectModelNoDirty } from '@/persistence/projectPersistence';
+import { RepoData } from '@/utils/repositoryUtils';
 
 export const getDotenvForProject = async (project: Project, requestedPorts: { proxyLocationId: string; port: number }[], dirMap: FullDirectoryMap): Promise<string> => {
     const secrets = (project.secrets || []).map((sec) => fillSecret(sec, project, requestedPorts, dirMap));
@@ -14,20 +15,31 @@ export const getAllSecretsForProject = async (projectId: string): Promise<Secret
     return secrets;
 };
 
-export const applyDotenv = async (dotenv: string, projectId: string) => {
-    const updatedSecrets = parseDotenv(dotenv, projectId);
+export const applyRepoData = async (repoData: RepoData, projectId: string) => {
+    const envSecrets = parseDotenv(repoData.dotenv, projectId);
+    const composeSecrets = extractSecretsFromDockerCompose(repoData.compose.contents, projectId);
+    const jsSecrets = buildRawVarsIntoSecrets(repoData.jsEnvVars, projectId, 'JS Source Code');
+    const combinedSecrets = [];
+    const secretNames = new Set<string>();
+    for (const sec of [...envSecrets, ...composeSecrets, ...jsSecrets]) {
+        if (!secretNames.has(sec.secretName)) {
+            combinedSecrets.push(sec);
+            secretNames.add(sec.secretName);
+        }
+    }
 
-    const projectSecrets = await getAllSecretsForProjectModel(projectId);
+    const oldProjectSecrets = await getAllSecretsForProjectModel(projectId);
 
-    const updatedSecretsWithValues = updatedSecrets.map((uSec) => {
-        const currentSecret = projectSecrets.find((sec) => sec.secretName === uSec.secretName);
+    const updatedProjectSecrets = combinedSecrets.map((uSec) => {
+        const currentSecret = oldProjectSecrets.find((sec) => sec.secretName === uSec.secretName);
         return currentSecret ?? uSec;
     });
 
     await deleteAllSecretsForProjectEnvModel(projectId);
-    for (const sec of updatedSecretsWithValues) {
+    for (const sec of updatedProjectSecrets) {
         await createSecretModel(sec);
     }
+    await updateProjectModelNoDirty(projectId, { hasDockerCompose: repoData.compose.exists, hasDotenv: !!repoData.dotenv.trim().length });
 };
 
 export const updateEnvironmentVariable = async (projectId: string, sec: Secret) => {

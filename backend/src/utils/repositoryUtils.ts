@@ -1,35 +1,38 @@
 import { execSafe } from './execUtils';
 import * as fs from 'fs/promises';
+import { getGitHttpsUri, getGitSshUri } from '@mosaiq/nsm-common/gitUtils';
 
 export interface RepoData {
     dotenv: string;
+    compose: { exists: boolean; contents: string };
+    jsEnvVars: string[];
 }
 
 export const getRepoData = async (projectId: string, repoOwner: string, repoName: string, repoBranch: string | undefined): Promise<RepoData> => {
-    try {
-        await cloneRepository(projectId, repoOwner, repoName, repoBranch);
-        const envFileContents = await getEnvFileFromDir(`${process.env.REPO_SANDBOX_PATH}/${projectId}`);
-        await deleteSandboxRepo(projectId);
-        return {
-            dotenv: envFileContents,
-        };
-    } catch (error) {
-        console.error('Error retrieving project:', error);
-        return { dotenv: '' };
-    }
+    await cloneRepository(projectId, repoOwner, repoName, repoBranch);
+    const dir = `${process.env.REPO_SANDBOX_PATH}/${projectId}`;
+    const envFileContents = await getEnvFileFromDir(dir);
+    const dockerComposeFile = await getDockerComposeFileFromDir(dir);
+    const jsEnvVars = await getJsProcessEnvVarsFromDir(dir);
+    await deleteSandboxRepo(projectId);
+    return {
+        dotenv: envFileContents,
+        compose: dockerComposeFile,
+        jsEnvVars,
+    };
 };
 
 const getEnvFileFromDir = async (dir: string): Promise<string> => {
-    if (process.env.PRODUCTION !== 'true') {
-        console.log('Not in production mode, skipping .env file retrieval');
-        return `
-# sample .env file
-SECRET_1=aaa
-SECRET_2=and
-OTHER_SECRET=othervalue
+    //     if (process.env.PRODUCTION !== 'true') {
+    //         console.log('Not in production mode, skipping .env file retrieval');
+    //         return `
+    // # sample .env file
+    // SECRET_1=aaa
+    // SECRET_2=and
+    // OTHER_SECRET=othervalue
 
-`;
-    }
+    // `;
+    //     }
     let envFile = '';
     try {
         const files = await fs.readdir(dir);
@@ -51,12 +54,97 @@ OTHER_SECRET=othervalue
     }
 };
 
-const deleteSandboxRepo = async (projectId: string): Promise<void> => {
-    if (process.env.PRODUCTION !== 'true') {
-        console.log('Not in production mode, skipping sandbox repo deletion');
-        return;
+const getDockerComposeFileFromDir = async (dir: string): Promise<{ exists: boolean; contents: string }> => {
+    //     if (process.env.PRODUCTION !== 'true') {
+    //         console.log('Not in production mode, skipping docker compose file retrieval');
+    //         return {
+    //             exists: true,
+    //             contents: `# sample docker-compose.yml file
+    // services:
+    //     common-job:
+    //         build: ./common/
+    //         restart: no
+    //     ui-job:
+    //         build: ./frontend/
+    //         restart: no
+    //         depends_on:
+    //             - common-job
+    //         volumes:
+    //             - type: bind
+    //               source: \${NSM_WWW_PATH}
+    //               target: /www # this is where the built files will be placed
+    //         env_file:
+    //             - .env
+    //     api: # the main API service
+    //         build: ./backend/
+    //         depends_on:
+    //             - common-job
+    //         ports:
+    //             - '\${API_PORT}:\${API_PORT}'
+    //         restart: always
+
+    // `,
+    //         };
+    //     }
+
+    const dockerComposeFilenames = ['compose.yaml', 'compose.yml', 'docker-compose.yaml', 'docker-compose.yml'];
+
+    for (const filename of dockerComposeFilenames) {
+        try {
+            const contents = await fs.readFile(`${dir}/${filename}`, 'utf-8');
+            return { exists: true, contents };
+        } catch {
+            // File not found, continue to next
+        }
     }
-    
+    console.warn('No Docker Compose file found in repository');
+    return { exists: false, contents: '' };
+};
+
+const getJsProcessEnvVarsFromDir = async (dir: string): Promise<string[]> => {
+    // if (process.env.PRODUCTION !== 'true') {
+    //     console.log('Not in production mode, skipping JS process.env vars retrieval');
+    //     return ['NODE_JS_VAR_1', 'NODE_JS_VAR_2'];
+    // }
+
+    const jsFileExtensions = ['.js', '.mjs', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx'];
+    const ignoreDirs = ['node_modules', '.git', '.github', '.vscode'];
+    const jsFiles: string[] = [];
+
+    const walkDir = async (currentDir: string) => {
+        if (ignoreDirs.some((d) => currentDir.includes(`/${d}`))) return;
+        const files = await fs.readdir(currentDir);
+        for (const file of files) {
+            const fullPath = `${currentDir}/${file}`;
+            const stat = await fs.stat(fullPath);
+            if (stat.isDirectory()) {
+                await walkDir(fullPath);
+            } else if (jsFileExtensions.some((ext) => file.endsWith(ext))) {
+                jsFiles.push(fullPath);
+            }
+        }
+    };
+    await walkDir(dir);
+
+    const envVars = new Set<string>();
+    const envVarRegex = /process\.env\.([A-Za-z0-9_-]+)/g;
+    for (const file of jsFiles) {
+        try {
+            const contents = await fs.readFile(file, 'utf-8');
+            const matches = contents.matchAll(envVarRegex);
+            for (const match of matches) {
+                if (match[1]) {
+                    envVars.add(match[1]);
+                }
+            }
+        } catch (error) {
+            console.error('Error reading JS file:', error, file);
+        }
+    }
+    return Array.from(envVars);
+};
+
+const deleteSandboxRepo = async (projectId: string): Promise<void> => {
     try {
         await fs.rm(`${process.env.REPO_SANDBOX_PATH}/${projectId}`, { recursive: true, force: true });
     } catch (e: any) {
@@ -66,20 +154,33 @@ const deleteSandboxRepo = async (projectId: string): Promise<void> => {
 };
 
 const cloneRepository = async (projectId: string, repoOwner: string, repoName: string, repoBranch: string | undefined): Promise<void> => {
-    if (process.env.PRODUCTION !== 'true') {
-        console.log('Not in production mode, skipping repository clone');
-        return;
-    }
+    const repoPath = `${process.env.REPO_SANDBOX_PATH}/${projectId}`;
+    const branchFlags = repoBranch ? `-b ${repoBranch} --single-branch` : '';
 
     await deleteSandboxRepo(projectId);
 
+    if (process.env.PRODUCTION !== 'true') {
+        console.log('Not in production mode, handling local repository clone');
+        const httpUri = getGitHttpsUri(repoOwner, repoName);
+        const cmd = `git clone --progress ${branchFlags} ${httpUri} ${repoPath}`;
+        console.log('Cloning repository with command:', cmd);
+        const { out: gitOut, code: gitCode } = await execSafe(cmd, 1000 * 60 * 1);
+        console.error('Git clone output:', gitOut);
+        if (gitCode !== 0) {
+            throw new Error(`Git clone exited with code ${gitCode}`);
+        }
+
+        return;
+    }
+
     try {
-        const gitSshUri = `git@github.com:${repoOwner}/${repoName}.git`;
-        const branchFlags = repoBranch ? `-b ${repoBranch} --single-branch` : '';
+        const gitSshUri = getGitSshUri(repoOwner, repoName);
         const sshFlags = `-c core.sshCommand="/usr/bin/ssh -i ${process.env.GIT_SSH_KEY_DIR}/${process.env.GIT_SSH_KEY_FILE}"`;
-        const cmd = `git clone --progress ${branchFlags} ${sshFlags} ${gitSshUri} ${process.env.REPO_SANDBOX_PATH}/${projectId}`;
+        const cmd = `git clone --progress ${branchFlags} ${sshFlags} ${gitSshUri} ${repoPath}`;
+        console.log('Cloning repository with command:', cmd);
         const { out: gitOut, code: gitCode } = await execSafe(cmd, 1000 * 60 * 5);
         if (gitCode !== 0) {
+            console.error('Git clone output:', gitOut);
             throw new Error(`Git clone exited with code ${gitCode}`);
         }
         return;

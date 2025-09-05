@@ -18,10 +18,47 @@ export const parseDotenv = (dotenv: string, projectId: string): Secret[] => {
                 projectId: projectId,
                 secretName: key.trim(),
                 secretValue: '',
-                secretPlaceholder: value?.trim() ?? '',
+                secretPlaceholder: (value?.trim() ?? '').slice(0, 20) + (value && value.length > 20 ? '...' : '') + ' (from .env)',
                 variable: false,
             });
         }
+    }
+
+    return secrets;
+};
+
+export const extractSecretsFromDockerCompose = (dockerCompose: string, projectId: string): Secret[] => {
+    const vars = new Set<string>();
+    const lines = dockerCompose.split('\n');
+    for (const _line of lines) {
+        const line = _line.split('#')[0].trim();
+        if (!line.length) continue;
+        const match = line.match(/\$\{([A-Za-z0-9_\-\.]+)\}/g);
+        if (match) {
+            for (const m of match) {
+                const varName = m.slice(2, -1);
+                vars.add(varName);
+            }
+        }
+    }
+
+    return buildRawVarsIntoSecrets(Array.from(vars), projectId, 'docker compose');
+};
+
+export const buildRawVarsIntoSecrets = (rawVars: string[], projectId: string, from: string): Secret[] => {
+    const secrets: Secret[] = [];
+    const seen = new Set<string>();
+
+    for (const varName of rawVars) {
+        if (seen.has(varName)) continue;
+        seen.add(varName);
+        secrets.push({
+            projectId: projectId,
+            secretName: varName,
+            secretValue: '',
+            secretPlaceholder: `(from ${from})`,
+            variable: false,
+        });
     }
 
     return secrets;

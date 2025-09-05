@@ -13,6 +13,8 @@ export interface ProjectModelType {
     dirtyConfig?: boolean;
     nginxConfigJson: string;
     workerNodeId?: string;
+    hasDockerCompose?: boolean;
+    hasDotenv?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -33,6 +35,8 @@ ProjectModel.init(
         dirtyConfig: DataTypes.BOOLEAN,
         nginxConfigJson: DataTypes.TEXT,
         workerNodeId: DataTypes.STRING,
+        hasDockerCompose: DataTypes.BOOLEAN,
+        hasDotenv: DataTypes.BOOLEAN,
     },
     { sequelize }
 );
