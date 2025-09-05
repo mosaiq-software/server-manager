@@ -1,6 +1,6 @@
 import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
-import { DeployableProject, DeploymentState, DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RelativeDirectoryMap, StaticConfigLocation } from '@mosaiq/nsm-common/types';
+import { DeployableControlPlaneConfig, DeployableProject, DeploymentState, DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RelativeDirectoryMap, StaticConfigLocation } from '@mosaiq/nsm-common/types';
 import { WORKER_BODY, WORKER_RESPONSE, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { getDotenvForProject } from './secretController';
 import { getWorkerNodeById } from './workerNodeController';
@@ -20,13 +20,26 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         if (project.state === DeploymentState.DEPLOYING) {
             return undefined;
         }
-
+        if (!project.repoOwner || !project.repoName) {
+            throw new Error('Project repository information incomplete');
+        }
+        if (!project.hasDockerCompose) {
+            throw new Error('Project does not have a Docker Compose file in the repository root');
+        }
         if (!project.workerNodeId) {
             throw new Error('No worker node assigned to project');
         }
         const workerNode = await getWorkerNodeById(project.workerNodeId);
         if (!workerNode) {
             throw new Error('Worker node not found');
+        }
+        const controlPlaneWorkerNodeId = process.env.CONTROL_PLANE_WORKER_ID;
+        if (!controlPlaneWorkerNodeId) {
+            throw new Error('No control plane worker node assigned in env');
+        }
+        const cpWorkerNode = await getWorkerNodeById(controlPlaneWorkerNodeId);
+        if (!cpWorkerNode) {
+            throw new Error('Control plane worker node not found');
         }
 
         logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId);
@@ -38,7 +51,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         const { conf: nginxConf, domains: nginxDomains } = getNginxConf(project, requestedPorts, ensuredDirs, workerNode.address);
 
         const runCommand = `docker compose -p ${project.id} up --build -d`;
-        const body: DeployableProject = {
+        const deployable: DeployableProject = {
             projectId: project.id,
             runCommand: runCommand,
             repoName: project.repoName,
@@ -47,10 +60,15 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             timeout: project.timeout || DEFAULT_TIMEOUT,
             logId: logId,
             dotenv: dotenv,
+        };
+        const depConf: DeployableControlPlaneConfig = {
+            projectId: project.id,
             nginxConf: nginxConf,
             domainsToCertify: nginxDomains,
+            logId: logId,
         };
-        await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, body);
+        await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, deployable);
+        await workerNodePost(cpWorkerNode.workerId, WORKER_ROUTES.POST_HANDLE_CONFIGS, depConf);
     } catch (error: any) {
         console.error('Error deploying project:', error);
         if (logId) {

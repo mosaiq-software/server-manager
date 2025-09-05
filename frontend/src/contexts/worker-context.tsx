@@ -10,6 +10,8 @@ type WorkerContextType = {
     update: (id: string, worker: Partial<WorkerNode>, clientOnly?: boolean) => Promise<void>;
     delete: (id: string) => Promise<void>;
     regenerateKey: (id: string) => Promise<void>;
+    controlPlaneWorkerId: string | undefined;
+    controlPlaneWorkerExists: boolean;
 };
 
 const WorkerContext = createContext<WorkerContextType | undefined>(undefined);
@@ -124,6 +126,8 @@ const WorkerProvider: React.FC<any> = ({ children }) => {
                 update: handleUpdateWorker,
                 delete: handleDeleteWorker,
                 regenerateKey: handleRegenWorkerKey,
+                controlPlaneWorkerId: process.env.CONTROL_PLANE_WORKER_ID,
+                controlPlaneWorkerExists: !!(process.env.CONTROL_PLANE_WORKER_ID && workers.find((w) => w.workerId === process.env.CONTROL_PLANE_WORKER_ID) !== undefined),
             }}
         >
             {children}

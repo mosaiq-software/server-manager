@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Center, Group, Loader, Modal, NumberInput, PasswordInput, Stack, Table, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Button, ButtonGroup, Center, Code, Group, Loader, Modal, NumberInput, PasswordInput, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import React, { useEffect, useState } from 'react';
 import { EditableTextInput } from '@/components/EditableTextInput';
@@ -176,6 +176,17 @@ const WorkersPage = () => {
                 <Button onClick={() => setModal('create')}>Add Worker Node</Button>
             </Group>
             <Text>These are the worker nodes in the NSM network.</Text>
+            {!workerCtx.controlPlaneWorkerExists && (
+                <Alert
+                    variant="filled"
+                    color="red"
+                    title="No Control Plane Worker Node"
+                >
+                    <Text>
+                        The control plane worker node is not set or does not exist. Set the <code>{workerCtx.controlPlaneWorkerId}</code> worker deployed on the same machine as the control plane.
+                    </Text>
+                </Alert>
+            )}
             <Table>
                 <Table.Thead>
                     <Table.Tr>
@@ -189,7 +200,10 @@ const WorkersPage = () => {
                 </Table.Thead>
                 <Table.Tbody>
                     {workerCtx.workers.map((worker) => (
-                        <Table.Tr key={worker.workerId}>
+                        <Table.Tr
+                            key={worker.workerId}
+                            bg={worker.workerId === workerCtx.controlPlaneWorkerId ? '#e7f2fb' : undefined}
+                        >
                             <Table.Td>{worker.workerId}</Table.Td>
                             <Table.Td>{worker.address}</Table.Td>
                             <Table.Td>{worker.port}</Table.Td>

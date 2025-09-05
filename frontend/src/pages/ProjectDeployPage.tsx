@@ -10,12 +10,14 @@ import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
 import { MdOutlineCheckBox, MdOutlineDelete, MdOutlineFileCopy, MdOutlineInsertLink, MdOutlineKey, MdOutlineLaunch, MdOutlineRefresh, MdOutlineRocket, MdOutlineRocketLaunch } from 'react-icons/md';
 import { useThrottledCallback } from '@mantine/hooks';
+import { useWorkers } from '@/contexts/worker-context';
 
 const ProjectDeployPage = () => {
     const params = useParams();
     const projectId = params.projectId;
     const navigate = useNavigate();
     const projectCtx = useProjects();
+    const workerCtx = useWorkers();
     const [project, setProject] = useState<Project | undefined | null>(undefined);
     const [modal, setModal] = useState<'reset-key' | 'deploy' | 'teardown' | null>(null);
     const [openDeploymentLog, setOpenDeploymentLog] = useState<string | null>(null);
@@ -87,6 +89,8 @@ const ProjectDeployPage = () => {
     const handleTeardown = async () => {
         // TODO handle tearing down a project
     };
+
+    const canDeploy = project.hasDockerCompose && workerCtx.controlPlaneWorkerExists && project.state !== DeploymentState.DEPLOYING && project.state !== DeploymentState.DESTROYING;
 
     return (
         <Stack>
@@ -192,7 +196,7 @@ const ProjectDeployPage = () => {
                     variant="light"
                     color="green"
                     leftSection={<MdOutlineRocketLaunch />}
-                    disabled={!project.hasDockerCompose}
+                    disabled={!canDeploy}
                 >
                     Deploy
                 </Button>
@@ -201,20 +205,36 @@ const ProjectDeployPage = () => {
                     variant="light"
                     color="red"
                     leftSection={<MdOutlineDelete />}
-                    disabled={!project.hasDockerCompose}
+                    disabled={!canDeploy}
                 >
                     Teardown
                 </Button>
-                {!project.hasDockerCompose && (
-                    <Alert
-                        color="red"
-                        variant="filled"
-                        title="Undeployable Project"
-                    >
-                        This project does not have a Docker Compose file configured.
-                    </Alert>
-                )}
             </Group>
+            {!project.hasDockerCompose && (
+                <Alert
+                    color="red"
+                    variant="filled"
+                    title="Undeployable Project"
+                >
+                    This project does not have a Docker Compose file configured.
+                </Alert>
+            )}
+            {!workerCtx.controlPlaneWorkerExists && (
+                <Alert
+                    color="red"
+                    variant="filled"
+                    title="No Control Plane Worker"
+                >
+                    NSM is not configured with a control plane worker node.{' '}
+                    <Link
+                        to="/workers"
+                        style={{ textDecoration: 'underline' }}
+                    >
+                        Add a worker node
+                    </Link>{' '}
+                    to enable deployments.
+                </Alert>
+            )}
             <Group
                 align="flex-end"
                 wrap="nowrap"

@@ -54,8 +54,12 @@ export interface DeployableProject {
     timeout: number;
     logId: string;
     dotenv: string;
+}
+export interface DeployableControlPlaneConfig {
+    projectId: string;
     nginxConf: string;
     domainsToCertify: string[];
+    logId: string;
 }
 
 export interface DeploymentLogUpdate {
