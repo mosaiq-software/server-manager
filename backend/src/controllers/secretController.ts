@@ -32,7 +32,16 @@ export const applyRepoData = async (repoData: RepoData, projectId: string) => {
 
     const updatedProjectSecrets = combinedSecrets.map((uSec) => {
         const currentSecret = oldProjectSecrets.find((sec) => sec.secretName === uSec.secretName);
-        return currentSecret ?? uSec;
+        if (currentSecret) {
+            return {
+                projectId: projectId,
+                secretName: currentSecret.secretName,
+                secretValue: currentSecret.secretValue,
+                secretPlaceholder: uSec.secretPlaceholder,
+                variable: uSec.variable,
+            };
+        }
+        return uSec;
     });
 
     await deleteAllSecretsForProjectEnvModel(projectId);

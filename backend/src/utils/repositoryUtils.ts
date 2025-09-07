@@ -1,6 +1,8 @@
 import { execSafe } from './execUtils';
 import * as fs from 'fs/promises';
 import { getGitHttpsUri, getGitSshUri } from '@mosaiq/nsm-common/gitUtils';
+import YAML from 'yaml';
+import { DockerCompose } from '@mosaiq/nsm-common/dockerComposeTypes';
 
 export interface RepoData {
     dotenv: string;
@@ -23,16 +25,6 @@ export const getRepoData = async (projectId: string, repoOwner: string, repoName
 };
 
 const getEnvFileFromDir = async (dir: string): Promise<string> => {
-    //     if (process.env.PRODUCTION !== 'true') {
-    //         console.log('Not in production mode, skipping .env file retrieval');
-    //         return `
-    // # sample .env file
-    // SECRET_1=aaa
-    // SECRET_2=and
-    // OTHER_SECRET=othervalue
-
-    // `;
-    //     }
     let envFile = '';
     try {
         const files = await fs.readdir(dir);
@@ -55,43 +47,12 @@ const getEnvFileFromDir = async (dir: string): Promise<string> => {
 };
 
 const getDockerComposeFileFromDir = async (dir: string): Promise<{ exists: boolean; contents: string }> => {
-    //     if (process.env.PRODUCTION !== 'true') {
-    //         console.log('Not in production mode, skipping docker compose file retrieval');
-    //         return {
-    //             exists: true,
-    //             contents: `# sample docker-compose.yml file
-    // services:
-    //     common-job:
-    //         build: ./common/
-    //         restart: no
-    //     ui-job:
-    //         build: ./frontend/
-    //         restart: no
-    //         depends_on:
-    //             - common-job
-    //         volumes:
-    //             - type: bind
-    //               source: \${NSM_WWW_PATH}
-    //               target: /www # this is where the built files will be placed
-    //         env_file:
-    //             - .env
-    //     api: # the main API service
-    //         build: ./backend/
-    //         depends_on:
-    //             - common-job
-    //         ports:
-    //             - '\${API_PORT}:\${API_PORT}'
-    //         restart: always
-
-    // `,
-    //         };
-    //     }
-
     const dockerComposeFilenames = ['compose.yaml', 'compose.yml', 'docker-compose.yaml', 'docker-compose.yml'];
 
     for (const filename of dockerComposeFilenames) {
         try {
             const contents = await fs.readFile(`${dir}/${filename}`, 'utf-8');
+            const parsed = YAML.parse(contents) as DockerCompose;
             return { exists: true, contents };
         } catch {
             // File not found, continue to next
@@ -102,11 +63,6 @@ const getDockerComposeFileFromDir = async (dir: string): Promise<{ exists: boole
 };
 
 const getJsProcessEnvVarsFromDir = async (dir: string): Promise<string[]> => {
-    // if (process.env.PRODUCTION !== 'true') {
-    //     console.log('Not in production mode, skipping JS process.env vars retrieval');
-    //     return ['NODE_JS_VAR_1', 'NODE_JS_VAR_2'];
-    // }
-
     const jsFileExtensions = ['.js', '.mjs', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx'];
     const ignoreDirs = ['node_modules', '.git', '.github', '.vscode'];
     const jsFiles: string[] = [];

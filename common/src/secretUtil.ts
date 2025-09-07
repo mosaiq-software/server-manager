@@ -18,7 +18,7 @@ export const parseDotenv = (dotenv: string, projectId: string): Secret[] => {
                 projectId: projectId,
                 secretName: key.trim(),
                 secretValue: '',
-                secretPlaceholder: (value?.trim() ?? '').slice(0, 20) + (value && value.length > 20 ? '...' : '') + ' (from .env)',
+                secretPlaceholder: (value?.trim() ?? '').slice(0, 60) + (value && value.length > 60 ? '...' : '') + ' (from .env)',
                 variable: false,
             });
         }

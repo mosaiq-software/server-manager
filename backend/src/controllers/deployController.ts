@@ -17,8 +17,10 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         const project = await getProject(projectId);
         if (!project) throw new Error('Project not found');
 
+        logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId || 'NO_WORKER_ASSIGNED');
+
         if (project.state === DeploymentState.DEPLOYING) {
-            return undefined;
+            throw new Error('Project is already deploying');
         }
         if (!project.repoOwner || !project.repoName) {
             throw new Error('Project repository information incomplete');
@@ -42,8 +44,6 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             throw new Error('Control plane worker node not found');
         }
 
-        logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId);
-
         const requestedPorts = await requestPortsForProject(project);
         const ensuredDirs = await getDirectoryMapForProject(project);
 
@@ -61,13 +61,14 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             logId: logId,
             dotenv: dotenv,
         };
+        await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, deployable);
+
         const depConf: DeployableControlPlaneConfig = {
             projectId: project.id,
             nginxConf: nginxConf,
             domainsToCertify: nginxDomains,
             logId: logId,
         };
-        await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, deployable);
         await workerNodePost(cpWorkerNode.workerId, WORKER_ROUTES.POST_HANDLE_CONFIGS, depConf);
     } catch (error: any) {
         console.error('Error deploying project:', error);

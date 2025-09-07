@@ -1,3 +1,5 @@
+import { DockerCompose } from './dockerComposeTypes';
+
 export interface Project {
     id: string;
     repoOwner: string;
@@ -144,9 +146,27 @@ export interface DynamicEnvVariable {
     type: DynamicEnvVariableType;
     placeholder?: string;
 }
+
 export interface RelativeDirectoryMap {
     [dynVarPath: string]: { relPath: string };
 }
 export interface FullDirectoryMap {
     [dynVarPath: string]: { fullPath: string };
+}
+
+export enum UriStatus {
+    UNKNOWN = 'unknown', // initial state, not yet checked
+    REACHABLE = 'reachable', // last check was successful, 100-300
+    UNREACHABLE = 'unreachable', // last check failed
+    ERROR = 'error', // last check resulted in an error 400-599
+}
+export enum DockerStatus {
+    UNKNOWN = 'unknown', // initial state, not yet checked
+    CREATED = 'created', // A container that has never been started.
+    RUNNING = 'running', // A running container, started by either docker start or docker run.
+    PAUSED = 'paused', // A paused container. See docker pause.
+    RESTARTING = 'restarting', // A container which is starting due to the designated restart policy for that container.
+    EXITED = 'exited', // A container which is no longer running. For example, the process inside the container completed or the container was stopped using the docker stop command.
+    REMOVING = 'removing', // A container which is in the process of being removed. See docker rm.
+    DEAD = 'dead', // A "defunct" container; for example, a container that was only partially removed because resources were kept busy by an external process. dead containers cannot be (re)started, only removed.
 }

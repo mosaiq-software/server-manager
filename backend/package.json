@@ -20,7 +20,8 @@
         "express": "^4.21.1",
         "query-string": "^9.1.1",
         "sequelize": "^6.37.5",
-        "sqlite3": "^5.1.7"
+        "sqlite3": "^5.1.7",
+        "yaml": "^2.8.1"
     },
     "devDependencies": {
         "@eslint/js": "^9.21.0",

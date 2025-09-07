@@ -9,6 +9,7 @@ export enum API_ROUTES {
     GET_PROJECTS = '/projects',
     GET_DEPLOY_LOG = '/deploy/:deployLogId',
     GET_WORKER_NODES = '/worker-nodes',
+    GET_WORKER_NODE_HEALTHCHECK = '/worker-nodes/:workerId/healthcheck',
 
     //POST
     POST_CREATE_PROJECT = '/project/create',
@@ -30,6 +31,7 @@ export interface API_PARAMS {
     [API_ROUTES.GET_PROJECTS]: {};
     [API_ROUTES.GET_DEPLOY_LOG]: { deployLogId: string };
     [API_ROUTES.GET_WORKER_NODES]: {};
+    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: { workerId: string };
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: {};
@@ -52,6 +54,7 @@ export interface API_BODY {
     [API_ROUTES.GET_PROJECTS]: undefined;
     [API_ROUTES.GET_DEPLOY_LOG]: undefined;
     [API_ROUTES.GET_WORKER_NODES]: undefined;
+    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
@@ -73,6 +76,7 @@ export interface API_RETURN {
     [API_ROUTES.GET_PROJECTS]: Project[];
     [API_ROUTES.GET_DEPLOY_LOG]: DeploymentLog | undefined;
     [API_ROUTES.GET_WORKER_NODES]: WorkerNode[] | undefined;
+    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: { ping: number | undefined; status: string } | undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
@@ -96,6 +100,7 @@ export interface API_AUTH {
     [API_ROUTES.GET_PROJECTS]: string;
     [API_ROUTES.GET_DEPLOY_LOG]: string;
     [API_ROUTES.GET_WORKER_NODES]: string;
+    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: string;

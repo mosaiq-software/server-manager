@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { EditableTextInput } from '@/components/EditableTextInput';
 import { useWorkers } from '@/contexts/worker-context';
 import { WorkerNode } from '@mosaiq/nsm-common/types';
+import { apiGet } from '@/utils/api';
+import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 
 const WorkersPage = () => {
     const workerCtx = useWorkers();
@@ -248,15 +250,16 @@ const WorkerStatus = (props: { worker: WorkerNode }) => {
     useEffect(() => {
         const checkPing = async () => {
             try {
-                const start = performance.now();
-                const response = await fetch(`http://${props.worker.address}:${props.worker.port}`, {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(5000),
-                });
-                const end = performance.now();
-                setStatus(response.status + '');
-                setPing(end - start);
-                if (response.ok) {
+                const ping = await apiGet(API_ROUTES.GET_WORKER_NODE_HEALTHCHECK, { workerId: props.worker.workerId }, 'AUTH TOKEN...');
+                if (ping === undefined) {
+                    setStatus('CP Unreachable');
+                    setPing(null);
+                    setIcon('🔴');
+                    return;
+                }
+                setStatus(ping.status);
+                setPing(ping.ping || null);
+                if (ping.ping) {
                     setIcon('🟢');
                 } else {
                     setIcon('⚠');
