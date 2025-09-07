@@ -1,8 +1,9 @@
 import { createSecretModel, deleteAllSecretsForProjectEnvModel, getAllSecretsForProjectModel, updateSecretModel } from '@/persistence/secretPersistence';
 import { assembleDotenv, parseDotenv, parseDynamicVariablePath, extractSecretsFromDockerCompose, buildRawVarsIntoSecrets } from '@mosaiq/nsm-common/secretUtil';
-import { DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RedirectConfigLocation, Secret } from '@mosaiq/nsm-common/types';
+import { DockerStatus, DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProjectService, ProxyConfigLocation, RedirectConfigLocation, Secret } from '@mosaiq/nsm-common/types';
 import { updateProjectModelNoDirty } from '@/persistence/projectPersistence';
-import { RepoData } from '@/utils/repositoryUtils';
+import { getServicesForProject, RepoData } from '@/utils/repositoryUtils';
+import { getProject, updateProject } from './projectController';
 
 export const getDotenvForProject = async (project: Project, requestedPorts: { proxyLocationId: string; port: number }[], dirMap: FullDirectoryMap): Promise<string> => {
     const secrets = (project.secrets || []).map((sec) => fillSecret(sec, project, requestedPorts, dirMap));
@@ -16,6 +17,9 @@ export const getAllSecretsForProject = async (projectId: string): Promise<Secret
 };
 
 export const applyRepoData = async (repoData: RepoData, projectId: string) => {
+    const project = await getProject(projectId);
+    if (!project) throw new Error('Project not found when applying repo data');
+
     const envSecrets = parseDotenv(repoData.dotenv, projectId);
     const composeSecrets = extractSecretsFromDockerCompose(repoData.compose.contents, projectId);
     const jsSecrets = buildRawVarsIntoSecrets(repoData.jsEnvVars, projectId, 'JS Source Code');
@@ -48,7 +52,26 @@ export const applyRepoData = async (repoData: RepoData, projectId: string) => {
     for (const sec of updatedProjectSecrets) {
         await createSecretModel(sec);
     }
-    await updateProjectModelNoDirty(projectId, { hasDockerCompose: repoData.compose.exists, hasDotenv: !!repoData.dotenv.trim().length });
+
+    const newServices = getServicesForProject(repoData.compose.parsed);
+    const oldServices = project.services || [];
+    const updated = newServices.map((sName) => {
+        const old = oldServices.find((s) => s.serviceName === sName);
+        if (old) return old;
+        const newService: ProjectService = {
+            serviceName: sName,
+            expectedContainerState: DockerStatus.UNKNOWN,
+            collectContainerLogs: false,
+        };
+        return newService;
+    });
+
+    await updateProject(projectId, {
+        hasDockerCompose: repoData.compose.exists,
+        hasDotenv: !!repoData.dotenv.trim().length,
+        dockerCompose: repoData.compose.parsed,
+        services: updated,
+    });
 };
 
 export const updateEnvironmentVariable = async (projectId: string, sec: Secret) => {

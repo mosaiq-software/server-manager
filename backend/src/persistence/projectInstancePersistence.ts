@@ -1,14 +1,11 @@
 import { sequelize } from '@/utils/dbHelper';
-import { DeploymentState } from '@mosaiq/nsm-common/types';
+import { ProjectInstance, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
 import { DataTypes, Model } from 'sequelize';
+import { Mutex } from 'async-mutex';
 
-export interface ProjectInstanceModelType {
-    id: string;
-    projectId: string;
-    workerNodeId: string;
-    state: DeploymentState;
-    created: number;
-    lastUpdated: number;
+const mutex = new Mutex();
+
+export interface ProjectInstanceModelType extends ProjectInstanceHeader {
     deploymentLog: string;
 }
 class ProjectInstanceModel extends Model {}
@@ -32,14 +29,32 @@ export const getProjectInstancesByProjectIdModel = async (projectId: string): Pr
     return (await ProjectInstanceModel.findAll({ where: { projectId } }))?.map((sec) => sec.toJSON()) as ProjectInstanceModelType[];
 };
 
-export const createProjectInstanceModel = async (projectInstanceData: ProjectInstanceModelType): Promise<void> => {
-    await ProjectInstanceModel.create({ ...projectInstanceData, lastUpdated: Date.now(), created: Date.now() });
+export const getProjectInstanceByIdModel = async (id: string): Promise<ProjectInstanceModelType | null> => {
+    return (await ProjectInstanceModel.findByPk(id))?.toJSON() as ProjectInstanceModelType;
 };
 
-export const updateProjectInstanceModel = async (id: string, projectInstanceData: Partial<ProjectInstanceModelType>): Promise<void> => {
+export const createProjectInstanceModel = async (projectInstanceData: ProjectInstanceHeader): Promise<void> => {
+    await ProjectInstanceModel.create({ ...projectInstanceData, lastUpdated: Date.now(), created: Date.now(), deploymentLog: '' });
+};
+
+export const updateProjectInstanceModel = async (id: string, projectInstanceData: Partial<ProjectInstanceHeader>): Promise<void> => {
     await ProjectInstanceModel.update({ ...projectInstanceData, lastUpdated: Date.now() }, { where: { id } });
 };
 
 export const deleteProjectInstanceModel = async (id: string) => {
     return await ProjectInstanceModel.destroy({ where: { id } });
+};
+
+export const appendToDeploymentLog = async (id: string, log: string) => {
+    await mutex.runExclusive(async () => {
+        const instance = await getProjectInstanceByIdModel(id);
+        if (!instance) throw new Error('Project Instance not found');
+        await ProjectInstanceModel.update(
+            {
+                deploymentLog: `${instance.deploymentLog ?? ''}${log}`,
+                lastUpdated: Date.now(),
+            },
+            { where: { id } }
+        );
+    });
 };

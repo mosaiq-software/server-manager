@@ -1,46 +1,36 @@
 import { sequelize } from '@/utils/dbHelper';
-import { DockerStatus, UriStatus } from '@mosaiq/nsm-common/types';
+import { DockerStatus, ProjectServiceInstance } from '@mosaiq/nsm-common/types';
 import { DataTypes, Model } from 'sequelize';
 
-export interface ServiceInstanceModelType {
-    id: string;
-    projectInstanceId: string;
-    serviceName: string;
-    uri: string | undefined;
-    uriStatus: UriStatus | undefined;
-    dockerContainerId: string | undefined;
-    dockerStatus: DockerStatus | undefined;
-    created: number;
-    lastUpdated: number;
-}
 class ServiceInstanceModel extends Model {}
 ServiceInstanceModel.init(
     {
-        id: {
+        instanceId: {
             type: DataTypes.STRING,
             primaryKey: true,
         },
         projectInstanceId: DataTypes.STRING,
         serviceName: DataTypes.STRING,
-        uri: DataTypes.STRING,
-        uriStatus: DataTypes.STRING,
-        dockerContainerId: DataTypes.STRING,
-        dockerStatus: DataTypes.STRING,
+        containerId: DataTypes.STRING,
+        expectedContainerState: DataTypes.STRING,
+        actualContainerState: DataTypes.STRING,
+        collectContainerLogs: DataTypes.BOOLEAN,
+        containerLogs: DataTypes.TEXT,
         created: DataTypes.NUMBER,
         lastUpdated: DataTypes.NUMBER,
     },
     { sequelize, timestamps: false }
 );
 
-export const getServiceInstancesByProjectInstanceIdModel = async (projectInstanceId: string): Promise<ServiceInstanceModelType[]> => {
-    return (await ServiceInstanceModel.findAll({ where: { projectInstanceId } }))?.map((sec) => sec.toJSON()) as ServiceInstanceModelType[];
+export const getServiceInstancesByProjectInstanceIdModel = async (projectInstanceId: string): Promise<ProjectServiceInstance[]> => {
+    return (await ServiceInstanceModel.findAll({ where: { projectInstanceId } }))?.map((sec) => sec.toJSON()) as ProjectServiceInstance[];
 };
 
-export const createServiceInstanceModel = async (serviceInstanceData: ServiceInstanceModelType): Promise<void> => {
+export const createServiceInstanceModel = async (serviceInstanceData: ProjectServiceInstance): Promise<void> => {
     await ServiceInstanceModel.create({ ...serviceInstanceData, lastUpdated: Date.now(), created: Date.now() });
 };
 
-export const updateServiceInstanceModel = async (id: string, serviceInstanceData: Partial<ServiceInstanceModelType>): Promise<void> => {
+export const updateServiceInstanceModel = async (id: string, serviceInstanceData: Partial<ProjectServiceInstance>): Promise<void> => {
     await ServiceInstanceModel.update({ ...serviceInstanceData, lastUpdated: Date.now() }, { where: { id } });
 };
 

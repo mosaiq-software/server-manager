@@ -1,4 +1,4 @@
-import { DeploymentLog, DeploymentLogUpdate, DeploymentState, Project, Secret, WorkerNode } from './types';
+import { DeploymentLogUpdate, DeploymentState, Project, ProjectInstance, Secret, WorkerNode } from './types';
 
 // ===== ROUTES =====
 export enum API_ROUTES {
@@ -7,7 +7,7 @@ export enum API_ROUTES {
     GET_DEPLOY_WEB = '/deployweb/:projectId/:key',
     GET_PROJECT = '/project/:projectId',
     GET_PROJECTS = '/projects',
-    GET_DEPLOY_LOG = '/deploy/:deployLogId',
+    GET_PROJECT_INSTANCE = '/project-instance/:projectInstanceId',
     GET_WORKER_NODES = '/worker-nodes',
     GET_WORKER_NODE_HEALTHCHECK = '/worker-nodes/:workerId/healthcheck',
 
@@ -29,7 +29,7 @@ export interface API_PARAMS {
     [API_ROUTES.GET_DEPLOY_WEB]: { projectId: string; key: string };
     [API_ROUTES.GET_PROJECT]: { projectId: string };
     [API_ROUTES.GET_PROJECTS]: {};
-    [API_ROUTES.GET_DEPLOY_LOG]: { deployLogId: string };
+    [API_ROUTES.GET_PROJECT_INSTANCE]: { projectInstanceId: string };
     [API_ROUTES.GET_WORKER_NODES]: {};
     [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: { workerId: string };
 
@@ -52,7 +52,7 @@ export interface API_BODY {
     [API_ROUTES.GET_DEPLOY_WEB]: undefined;
     [API_ROUTES.GET_PROJECT]: undefined;
     [API_ROUTES.GET_PROJECTS]: undefined;
-    [API_ROUTES.GET_DEPLOY_LOG]: undefined;
+    [API_ROUTES.GET_PROJECT_INSTANCE]: undefined;
     [API_ROUTES.GET_WORKER_NODES]: undefined;
     [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: undefined;
 
@@ -74,7 +74,7 @@ export interface API_RETURN {
     [API_ROUTES.GET_DEPLOY_WEB]: string | undefined;
     [API_ROUTES.GET_PROJECT]: Project | undefined;
     [API_ROUTES.GET_PROJECTS]: Project[];
-    [API_ROUTES.GET_DEPLOY_LOG]: DeploymentLog | undefined;
+    [API_ROUTES.GET_PROJECT_INSTANCE]: ProjectInstance | undefined;
     [API_ROUTES.GET_WORKER_NODES]: WorkerNode[] | undefined;
     [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: { ping: number | undefined; status: string } | undefined;
 
@@ -98,7 +98,7 @@ export interface API_AUTH {
     [API_ROUTES.GET_DEPLOY_WEB]: string;
     [API_ROUTES.GET_PROJECT]: string;
     [API_ROUTES.GET_PROJECTS]: string;
-    [API_ROUTES.GET_DEPLOY_LOG]: string;
+    [API_ROUTES.GET_PROJECT_INSTANCE]: string;
     [API_ROUTES.GET_WORKER_NODES]: string;
     [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: undefined;
 

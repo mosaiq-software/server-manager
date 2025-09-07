@@ -1,23 +1,33 @@
-import { createDeploymentLogModel, updateDeploymentLogModel } from '@/persistence/deploymentLogPersistence';
 import { getProjectByIdModel, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
-import { DeployableControlPlaneConfig, DeployableProject, DeploymentState, DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProxyConfigLocation, RelativeDirectoryMap, StaticConfigLocation } from '@mosaiq/nsm-common/types';
+import { DeployableControlPlaneConfig, DeployableProject, DeploymentState, DockerStatus, DynamicEnvVariableFields, FullDirectoryMap, NginxConfigLocationType, Project, ProjectInstance, ProjectInstanceHeader, ProjectServiceInstance, ProxyConfigLocation, RelativeDirectoryMap, StaticConfigLocation } from '@mosaiq/nsm-common/types';
 import { WORKER_BODY, WORKER_RESPONSE, WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { getDotenvForProject } from './secretController';
 import { getWorkerNodeById } from './workerNodeController';
-import { getProject } from './projectController';
+import { getProject, syncProjectToRepoData } from './projectController';
 import { workerNodePost } from '@/utils/workerAPI';
 import { stringifyDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { buildNginxConfigForProject } from '@/utils/nginxUtils';
+import { appendToDeploymentLog, createProjectInstanceModel, updateProjectInstanceModel } from '@/persistence/projectInstancePersistence';
+import { DockerCompose } from '@mosaiq/nsm-common/dockerComposeTypes';
+import { createServiceInstanceModel } from '@/persistence/serviceInstancePersistence';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
-    let logId: string | undefined;
+    const instanceId = crypto.randomUUID();
     try {
-        const project = await getProject(projectId);
+        let project = await getProject(projectId);
         if (!project) throw new Error('Project not found');
 
-        logId = await createDeploymentLogModel(projectId, 'Starting deployment...\n', DeploymentState.DEPLOYING, project.workerNodeId || 'NO_WORKER_ASSIGNED');
+        const projectInstanceHeader: ProjectInstanceHeader = {
+            id: instanceId,
+            projectId: project.id,
+            workerNodeId: project.workerNodeId || 'NO_WORKER_ASSIGNED',
+            state: DeploymentState.DEPLOYING,
+            created: Date.now(),
+            lastUpdated: Date.now(),
+        };
+        await createProjectInstanceModel(projectInstanceHeader);
 
         if (project.state === DeploymentState.DEPLOYING) {
             throw new Error('Project is already deploying');
@@ -25,6 +35,15 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         if (!project.repoOwner || !project.repoName) {
             throw new Error('Project repository information incomplete');
         }
+
+        const beforeSync = JSON.stringify(project);
+        await syncProjectToRepoData(projectId);
+        project = await getProject(projectId);
+        if (!project) throw new Error('Project not found after sync');
+        if (!compareProjects(JSON.parse(beforeSync), project)) {
+            throw new Error('Project configuration changed after syncing with repository. Please review the changes and try deploying again.');
+        }
+
         if (!project.hasDockerCompose) {
             throw new Error('Project does not have a Docker Compose file in the repository root');
         }
@@ -50,6 +69,25 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         const dotenv = await getDotenvForProject(project, requestedPorts, ensuredDirs);
         const { conf: nginxConf, domains: nginxDomains } = getNginxConf(project, requestedPorts, ensuredDirs, workerNode.address);
 
+        const services = project.services || [];
+        const serviceInstances: ProjectServiceInstance[] = [];
+        for (const service of services) {
+            const instance: ProjectServiceInstance = {
+                instanceId: crypto.randomUUID(),
+                projectInstanceId: instanceId,
+                containerId: undefined,
+                actualContainerState: DockerStatus.UNKNOWN,
+                containerLogs: '',
+                created: Date.now(),
+                lastUpdated: Date.now(),
+                serviceName: service.serviceName,
+                expectedContainerState: service.expectedContainerState,
+                collectContainerLogs: service.collectContainerLogs,
+            };
+            serviceInstances.push(instance);
+            await createServiceInstanceModel(instance);
+        }
+
         const runCommand = `docker compose -p ${project.id} up --build -d`;
         const deployable: DeployableProject = {
             projectId: project.id,
@@ -58,8 +96,9 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             repoOwner: project.repoOwner,
             repoBranch: project.repoBranch,
             timeout: project.timeout || DEFAULT_TIMEOUT,
-            logId: logId,
+            logId: instanceId,
             dotenv: dotenv,
+            services: serviceInstances,
         };
         await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, deployable);
 
@@ -67,21 +106,19 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             projectId: project.id,
             nginxConf: nginxConf,
             domainsToCertify: nginxDomains,
-            logId: logId,
+            logId: instanceId,
         };
         await workerNodePost(cpWorkerNode.workerId, WORKER_ROUTES.POST_HANDLE_CONFIGS, depConf);
     } catch (error: any) {
         console.error('Error deploying project:', error);
-        if (logId) {
-            await updateDeploymentLog(logId, DeploymentState.FAILED, `Error deploying project: ${error.message}\n`);
-        }
+        await updateDeploymentLog(instanceId, DeploymentState.FAILED, `Error deploying project: ${error.message}\n`);
     }
-    return logId;
+    return instanceId;
 };
 
-export const updateDeploymentLog = async (logId: string, status: DeploymentState, logText: string) => {
-    await updateDeploymentLogModel(logId, { status, log: logText });
-    await updateProjectModelNoDirty(logId, { state: status });
+export const updateDeploymentLog = async (instanceId: string, status: DeploymentState, logText: string) => {
+    await updateProjectInstanceModel(instanceId, { state: status });
+    await appendToDeploymentLog(instanceId, logText);
 };
 
 const requestPortsForProject = async (project: Project): Promise<{ proxyLocationId: string; port: number }[]> => {
@@ -163,4 +200,26 @@ const getNginxConf = (project: Project, requestedPorts: { proxyLocationId: strin
     }
     const nginxConf = buildNginxConfigForProject(projectDC);
     return { conf: nginxConf, domains: domains };
+};
+
+const compareProjects = (projA: Project, projB: Project): boolean => {
+    const nginxA = JSON.stringify(projA.nginxConfig || { servers: [] });
+    const nginxB = JSON.stringify(projB.nginxConfig || { servers: [] });
+    if (nginxA !== nginxB) return false;
+
+    const secretsA = projA.secrets
+        ?.map((s) => s.secretName)
+        .sort()
+        .join(',');
+    const secretsB = projB.secrets
+        ?.map((s) => s.secretName)
+        .sort()
+        .join(',');
+    if (secretsA !== secretsB) return false;
+
+    const servicesA = JSON.stringify(projA.services || []);
+    const servicesB = JSON.stringify(projB.services || []);
+    if (servicesA !== servicesB) return false;
+
+    return projA.repoOwner === projB.repoOwner && projA.repoName === projB.repoName && projA.repoBranch === projB.repoBranch && projA.hasDockerCompose === projB.hasDockerCompose && projA.hasDotenv === projB.hasDotenv;
 };

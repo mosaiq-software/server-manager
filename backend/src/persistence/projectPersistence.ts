@@ -12,6 +12,8 @@ export interface ProjectModelType {
     timeout?: number;
     dirtyConfig?: boolean;
     nginxConfigJson: string;
+    dockerComposeJson: string;
+    servicesJson: string;
     workerNodeId?: string;
     hasDockerCompose?: boolean;
     hasDotenv?: boolean;
@@ -34,6 +36,8 @@ ProjectModel.init(
         timeout: DataTypes.NUMBER,
         dirtyConfig: DataTypes.BOOLEAN,
         nginxConfigJson: DataTypes.TEXT,
+        dockerComposeJson: DataTypes.TEXT,
+        servicesJson: DataTypes.TEXT,
         workerNodeId: DataTypes.STRING,
         hasDockerCompose: DataTypes.BOOLEAN,
         hasDotenv: DataTypes.BOOLEAN,

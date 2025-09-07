@@ -11,10 +11,12 @@ export interface Project {
     updatedAt?: string;
     allowCICD?: boolean;
     secrets?: Secret[];
-    deployLogs?: DeployLogHeader[];
+    instances?: ProjectInstanceHeader[];
     timeout?: number;
     dirtyConfig?: boolean;
     nginxConfig?: ProjectNginxConfig;
+    dockerCompose?: DockerCompose;
+    services?: ProjectService[];
     workerNodeId?: string;
     hasDockerCompose?: boolean;
     hasDotenv?: boolean;
@@ -28,14 +30,17 @@ export interface Secret {
     variable: boolean;
 }
 
-export interface DeployLogHeader {
+export interface ProjectInstanceHeader {
     id: string;
-    createdAt: string;
     projectId: string;
-    status: DeploymentState;
+    workerNodeId: string;
+    state: DeploymentState;
+    created: number;
+    lastUpdated: number;
 }
-export interface DeploymentLog extends DeployLogHeader {
-    log: string;
+export interface ProjectInstance extends ProjectInstanceHeader {
+    deploymentLog: string;
+    services: ProjectServiceInstance[];
 }
 
 export enum DeploymentState {
@@ -56,6 +61,7 @@ export interface DeployableProject {
     timeout: number;
     logId: string;
     dotenv: string;
+    services: ProjectServiceInstance[];
 }
 export interface DeployableControlPlaneConfig {
     projectId: string;
@@ -169,4 +175,19 @@ export enum DockerStatus {
     EXITED = 'exited', // A container which is no longer running. For example, the process inside the container completed or the container was stopped using the docker stop command.
     REMOVING = 'removing', // A container which is in the process of being removed. See docker rm.
     DEAD = 'dead', // A "defunct" container; for example, a container that was only partially removed because resources were kept busy by an external process. dead containers cannot be (re)started, only removed.
+}
+
+export interface ProjectService {
+    serviceName: string;
+    expectedContainerState: DockerStatus;
+    collectContainerLogs: boolean;
+}
+export interface ProjectServiceInstance extends ProjectService {
+    instanceId: string;
+    projectInstanceId: string;
+    containerId: string | undefined;
+    actualContainerState: DockerStatus;
+    containerLogs: string;
+    created: number;
+    lastUpdated: number;
 }

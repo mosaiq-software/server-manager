@@ -3,9 +3,10 @@ import { deployProject, updateDeploymentLog } from '@/controllers/deployControll
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 import express from 'express';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
-import { getDeploymentLogByIdModel } from '@/persistence/deploymentLogPersistence';
 import { updateEnvironmentVariable } from '@/controllers/secretController';
 import { createWorkerNode, deleteWorkerNode, getAllWorkerNodes, regenerateWorkerNodeKey, updateWorkerNode } from './controllers/workerNodeController';
+import { getProjectInstanceByIdModel } from './persistence/projectInstancePersistence';
+import { getProjectInstance } from './controllers/projectInstanceController';
 
 const router = express.Router();
 
@@ -97,22 +98,22 @@ router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_DEPLOY_LOG, async (req, res) => {
-    const params = req.params as API_PARAMS[API_ROUTES.GET_DEPLOY_LOG];
+router.get(API_ROUTES.GET_PROJECT_INSTANCE, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.GET_PROJECT_INSTANCE];
     try {
-        if (!params.deployLogId) {
-            res.status(400).send('No deployLogId');
+        if (!params.projectInstanceId) {
+            res.status(400).send('No projectInstanceId');
             return;
         }
-        const deployLog = await getDeploymentLogByIdModel(params.deployLogId);
-        if (!deployLog) {
-            res.status(404).send('Deploy log not found');
+        const projectInstance = await getProjectInstance(params.projectInstanceId);
+        if (!projectInstance) {
+            res.status(404).send('Project instance not found');
             return;
         }
-        const response: API_RETURN[API_ROUTES.GET_DEPLOY_LOG] = deployLog;
+        const response: API_RETURN[API_ROUTES.GET_PROJECT_INSTANCE] = projectInstance;
         res.status(200).json(response);
     } catch (e: any) {
-        console.error('Error getting deploy log', e);
+        console.error('Error getting project instance', e);
         res.status(500).send();
     }
 });

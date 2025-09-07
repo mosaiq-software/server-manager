@@ -1,7 +1,7 @@
 import { ActionIcon, ActionIconGroup, Alert, Button, Center, Combobox, CopyButton, Divider, Fieldset, Grid, Group, Loader, Menu, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { DeploymentState, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
+import { DeploymentState, DockerStatus, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, ProjectService, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '@/utils/api';
@@ -286,6 +286,44 @@ const ProjectConfigPage = () => {
                 </Grid>
             </Stack>
             <Space h="xl" />
+            <Stack gap="xs">
+                <Group
+                    align="flex-start"
+                    justify="flex-start"
+                >
+                    <Stack>
+                        <Title order={5}>Docker Compose Services</Title>
+                        <Text
+                            fz=".75rem"
+                            c="dimmed"
+                        >
+                            Pulled in from the repository
+                        </Text>
+                    </Stack>
+                    {!project.hasDockerCompose && (
+                        <Alert
+                            color="yellow"
+                            variant="light"
+                            title="No Docker Compose File"
+                        >
+                            This root of this project does not have any files starting with `compose.y(a)ml` or `docker-compose.y(a)ml`.
+                        </Alert>
+                    )}
+                </Group>
+                <Group>
+                    {project.services?.map((service) => (
+                        <Service
+                            key={service.serviceName}
+                            service={service}
+                            onChange={(updated) => {
+                                const newService = { ...service, ...updated };
+                                const newServices = project.services?.map((s) => (s.serviceName === service.serviceName ? newService : s)) || [];
+                                updateProject({ services: newServices });
+                            }}
+                        />
+                    ))}
+                </Group>
+            </Stack>
         </Stack>
     );
 };
@@ -318,7 +356,12 @@ const EnvVarRow = (props: EnvVarRowProps) => {
     return (
         <>
             <Grid.Col span={3}>
-                <Title order={6}>{secret.secretName}</Title>
+                <Title
+                    order={6}
+                    ta="right"
+                >
+                    {secret.secretName}
+                </Title>
             </Grid.Col>
             <Grid.Col span={9}>
                 <Group w="100%">
@@ -411,6 +454,85 @@ const EnvVarRow = (props: EnvVarRowProps) => {
                 </Group>
             </Grid.Col>
         </>
+    );
+};
+
+const DockerStatusDescriptions: { [key in DockerStatus]: string } = {
+    [DockerStatus.UNKNOWN]: 'Initial state, not yet checked',
+    [DockerStatus.CREATED]: 'Container that has never been started.',
+    [DockerStatus.RUNNING]: 'Container is running normally.',
+    [DockerStatus.PAUSED]: 'Container is paused.',
+    [DockerStatus.RESTARTING]: 'Container has stopped and is restarting.',
+    [DockerStatus.EXITED]: 'Container has run and stopped gracefully.',
+    [DockerStatus.REMOVING]: 'Container is in the process of being removed.',
+    [DockerStatus.DEAD]: 'Container is "defunct" and cannot be started.',
+};
+interface ServiceProps {
+    service: ProjectService;
+    onChange: (service: Partial<ProjectService>) => void;
+}
+const Service = (props: ServiceProps) => {
+    const { service, onChange } = props;
+    const combobox = useCombobox();
+    return (
+        <Fieldset w={300}>
+            <Stack>
+                <Title order={6}>{service.serviceName}</Title>
+                <Combobox
+                    store={combobox}
+                    width={500}
+                    position="bottom"
+                    withArrow
+                    onOptionSubmit={(val) => {
+                        onChange({ expectedContainerState: val as DockerStatus });
+                        combobox.closeDropdown();
+                    }}
+                >
+                    <Combobox.Target>
+                        <TextInput
+                            label="Expected Container State"
+                            value={service.expectedContainerState}
+                            readOnly
+                            onClick={() => combobox.toggleDropdown()}
+                            description={DockerStatusDescriptions[service.expectedContainerState]}
+                        />
+                    </Combobox.Target>
+                    <Combobox.Dropdown>
+                        <Combobox.Header>The ending state of a successful container run.</Combobox.Header>
+                        <Combobox.Group label="Normal States">
+                            {[DockerStatus.RUNNING, DockerStatus.EXITED].map((status) => (
+                                <Combobox.Option
+                                    key={status}
+                                    value={status}
+                                >
+                                    <Title order={6}>{status}</Title>
+                                    <Text fz="xs">{DockerStatusDescriptions[status]}</Text>
+                                </Combobox.Option>
+                            ))}
+                        </Combobox.Group>
+                        <Combobox.Group label="Other States">
+                            {[DockerStatus.CREATED, DockerStatus.PAUSED, DockerStatus.RESTARTING, DockerStatus.REMOVING, DockerStatus.DEAD, DockerStatus.UNKNOWN].map((status) => (
+                                <Combobox.Option
+                                    key={status}
+                                    value={status}
+                                >
+                                    <Title order={6}>{status}</Title>
+                                    <Text fz="xs">{DockerStatusDescriptions[status]}</Text>
+                                </Combobox.Option>
+                            ))}
+                        </Combobox.Group>
+                    </Combobox.Dropdown>
+                </Combobox>
+                <Switch
+                    label="Collect Container Logs"
+                    description="Should the stdout and stderr of this container be collected and stored?"
+                    checked={service.collectContainerLogs}
+                    onChange={(event) => {
+                        onChange({ collectContainerLogs: event.currentTarget.checked });
+                    }}
+                />
+            </Stack>
+        </Fieldset>
     );
 };
 

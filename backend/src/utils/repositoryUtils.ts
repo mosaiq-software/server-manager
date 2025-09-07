@@ -6,7 +6,7 @@ import { DockerCompose } from '@mosaiq/nsm-common/dockerComposeTypes';
 
 export interface RepoData {
     dotenv: string;
-    compose: { exists: boolean; contents: string };
+    compose: { exists: boolean; contents: string; parsed: DockerCompose | undefined };
     jsEnvVars: string[];
 }
 
@@ -46,20 +46,20 @@ const getEnvFileFromDir = async (dir: string): Promise<string> => {
     }
 };
 
-const getDockerComposeFileFromDir = async (dir: string): Promise<{ exists: boolean; contents: string }> => {
+const getDockerComposeFileFromDir = async (dir: string): Promise<{ exists: boolean; contents: string; parsed: DockerCompose | undefined }> => {
     const dockerComposeFilenames = ['compose.yaml', 'compose.yml', 'docker-compose.yaml', 'docker-compose.yml'];
 
     for (const filename of dockerComposeFilenames) {
         try {
             const contents = await fs.readFile(`${dir}/${filename}`, 'utf-8');
             const parsed = YAML.parse(contents) as DockerCompose;
-            return { exists: true, contents };
+            return { exists: true, contents, parsed };
         } catch {
             // File not found, continue to next
         }
     }
     console.warn('No Docker Compose file found in repository');
-    return { exists: false, contents: '' };
+    return { exists: false, contents: '', parsed: undefined };
 };
 
 const getJsProcessEnvVarsFromDir = async (dir: string): Promise<string[]> => {
@@ -144,4 +144,9 @@ const cloneRepository = async (projectId: string, repoOwner: string, repoName: s
         console.error('Error cloning repository:', e);
         throw e;
     }
+};
+
+export const getServicesForProject = (compose: DockerCompose | undefined): string[] => {
+    if (!compose || !compose.services) return [];
+    return Object.keys(compose.services);
 };

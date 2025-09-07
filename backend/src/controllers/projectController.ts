@@ -1,21 +1,23 @@
 import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
-import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
+import { DeploymentState, Project, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
 import { applyRepoData, getAllSecretsForProject } from './secretController';
-import { getAllDeploymentLogs } from '@/persistence/deploymentLogPersistence';
 import { getRepoData } from '@/utils/repositoryUtils';
+import { getProjectInstancesByProjectIdModel } from '@/persistence/projectInstancePersistence';
 
 export const getProject = async (projectId: string) => {
     const projectData = await getProjectByIdModel(projectId);
     if (!projectData) return undefined;
 
     const secrets = await getAllSecretsForProject(projectId);
-    const deployLogs = (await getAllDeploymentLogs(projectId))
-        .map((log) => ({
-            ...log,
-            log: '',
-        }))
-        .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
-
+    const instances = (await getProjectInstancesByProjectIdModel(projectId)).sort((a, b) => b.created - a.created);
+    const instanceHeaders: ProjectInstanceHeader[] = instances.map((inst) => ({
+        id: inst.id,
+        projectId: inst.projectId,
+        workerNodeId: inst.workerNodeId,
+        state: inst.state,
+        created: inst.created,
+        lastUpdated: inst.lastUpdated,
+    }));
     const project: Project = {
         id: projectData.id,
         repoOwner: projectData.repoOwner,
@@ -26,11 +28,13 @@ export const getProject = async (projectId: string) => {
         createdAt: projectData.createdAt,
         updatedAt: projectData.updatedAt,
         secrets: secrets,
-        deployLogs: deployLogs,
+        instances: instanceHeaders,
         allowCICD: projectData.allowCICD,
         dirtyConfig: projectData.dirtyConfig,
         timeout: projectData.timeout,
-        nginxConfig: projectData.nginxConfigJson ? JSON.parse(projectData.nginxConfigJson) : undefined,
+        nginxConfig: JSON.parse(projectData.nginxConfigJson),
+        dockerCompose: JSON.parse(projectData.dockerComposeJson),
+        services: JSON.parse(projectData.servicesJson),
         workerNodeId: projectData.workerNodeId,
         hasDockerCompose: projectData.hasDockerCompose,
         hasDotenv: projectData.hasDotenv,
@@ -60,6 +64,8 @@ export const createProject = async (project: Project) => {
             allowCICD: !!project.allowCICD,
             dirtyConfig: false,
             nginxConfigJson: JSON.stringify({ servers: [] }),
+            dockerComposeJson: JSON.stringify({ services: {} }),
+            servicesJson: JSON.stringify([]),
         };
         await createProjectModel(project.id, newProject);
 
@@ -76,7 +82,11 @@ export const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
         const nginxConfigJson = updates.nginxConfig ? JSON.stringify(updates.nginxConfig) : undefined;
         delete updates.nginxConfig;
-        await updateProjectModelNoDirty(id, { dirtyConfig: true, ...updates, nginxConfigJson });
+        const dockerComposeJson = updates.dockerCompose ? JSON.stringify(updates.dockerCompose) : undefined;
+        delete updates.dockerCompose;
+        const servicesJson = updates.services ? JSON.stringify(updates.services) : undefined;
+        delete updates.services;
+        await updateProjectModelNoDirty(id, { dirtyConfig: true, ...updates, nginxConfigJson, dockerComposeJson, servicesJson });
     } catch (error) {
         console.error('Error updating project:', error);
         return null;

@@ -1,7 +1,7 @@
 import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title, Code, Tooltip, Alert } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { DeployLogHeader, DeploymentState, Project } from '@mosaiq/nsm-common/types';
+import { DeploymentState, Project, ProjectInstance, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '@/utils/api';
@@ -21,8 +21,8 @@ const ProjectDeployPage = () => {
     const [project, setProject] = useState<Project | undefined | null>(undefined);
     const [modal, setModal] = useState<'reset-key' | 'deploy' | 'teardown' | null>(null);
     const [openDeploymentLog, setOpenDeploymentLog] = useState<string | null>(null);
-    const [currentDeploymentLogId, setCurrentDeploymentLogId] = useState<string | undefined>(undefined);
-    const [currentDeploymentLog, setCurrentDeploymentLog] = useState<DeployLogHeader | undefined>(undefined);
+    const [currentProjectInstanceId, setCurrentProjectInstanceId] = useState<string | undefined>(undefined);
+    const [currentProjectInstance, setCurrentProjectInstance] = useState<ProjectInstance | undefined>(undefined);
 
     useEffect(() => {
         const foundProject = projectCtx.projects.find((proj) => proj.id === projectId);
@@ -31,17 +31,17 @@ const ProjectDeployPage = () => {
 
     useEffect(() => {
         const intervalId = setInterval(async () => {
-            if (currentDeploymentLogId) {
-                const log = await apiGet(API_ROUTES.GET_DEPLOY_LOG, { deployLogId: currentDeploymentLogId }, 'AUTH TOKEN...');
-                if (!log) return;
-                setCurrentDeploymentLog({ ...log });
-                if (log?.status !== DeploymentState.DEPLOYING) {
+            if (currentProjectInstanceId) {
+                const instance = await apiGet(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: currentProjectInstanceId }, 'AUTH TOKEN...');
+                if (!instance) return;
+                setCurrentProjectInstance({ ...instance });
+                if (instance?.state !== DeploymentState.DEPLOYING) {
                     clearInterval(intervalId);
                 }
             }
         }, 2000);
         return () => clearInterval(intervalId);
-    }, [currentDeploymentLogId]);
+    }, [currentProjectInstanceId]);
 
     if (project === undefined) {
         return (
@@ -69,7 +69,7 @@ const ProjectDeployPage = () => {
             notifications.show({ message: 'Failed to get deployment log ID. Reload to see log', color: 'yellow' });
         } else {
             setOpenDeploymentLog(newLogId);
-            setCurrentDeploymentLogId(newLogId);
+            setCurrentProjectInstanceId(newLogId);
         }
         projectCtx.update(project.id, { dirtyConfig: false }, true);
     };
@@ -298,12 +298,12 @@ const ProjectDeployPage = () => {
                 value={openDeploymentLog}
                 onChange={setOpenDeploymentLog}
             >
-                {[currentDeploymentLog, ...(project.deployLogs ?? [])].map(
-                    (log) =>
-                        log && (
-                            <DeployLogItem
-                                key={log.id}
-                                header={log}
+                {[currentProjectInstance, ...(project.instances ?? [])].map(
+                    (instance) =>
+                        instance && (
+                            <ProjectInstanceItem
+                                key={instance.id}
+                                header={instance}
                             />
                         )
                 )}
@@ -312,10 +312,10 @@ const ProjectDeployPage = () => {
     );
 };
 
-interface DeployLogItemProps {
-    header: DeployLogHeader;
+interface ProjectInstanceItemProps {
+    header: ProjectInstanceHeader;
 }
-const DeployLogItem = (props: DeployLogItemProps) => {
+const ProjectInstanceItem = (props: ProjectInstanceItemProps) => {
     const [text, setText] = useState((props.header as any).log ?? '');
     const handleGetText = async (force?: boolean) => {
         if ((text && !force) || text === 'Fetching log...') return; // Already fetched
@@ -323,19 +323,19 @@ const DeployLogItem = (props: DeployLogItemProps) => {
         setText('Fetching log...');
         try {
             await new Promise((resolve) => setTimeout(resolve, 500));
-            const log = await apiGet(API_ROUTES.GET_DEPLOY_LOG, { deployLogId: props.header.id }, 'AUTH TOKEN...');
-            if (!log?.log) {
+            const instance = await apiGet(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: props.header.id }, 'AUTH TOKEN...');
+            if (!instance?.deploymentLog) {
                 setText('Failed to find log..');
                 return;
             }
-            const logText = log.log.replace('\r', '\n');
+            const logText = instance.deploymentLog.replace('\r\n', '\n');
             setText(logText);
         } catch (error) {
             setText('Failed to fetch log..');
         }
     };
 
-    const date = new Date(props.header.createdAt).toLocaleString();
+    const date = new Date(props.header.created).toLocaleString();
 
     return (
         <Accordion.Item
@@ -345,7 +345,7 @@ const DeployLogItem = (props: DeployLogItemProps) => {
             <Accordion.Control>
                 <Group justify="space-between">
                     <Text>{date}</Text>
-                    <Text>({props.header.status})</Text>
+                    <Text>({props.header.state})</Text>
                 </Group>
             </Accordion.Control>
             <Accordion.Panel>
