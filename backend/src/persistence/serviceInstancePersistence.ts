@@ -26,14 +26,18 @@ export const getServiceInstancesByProjectInstanceIdModel = async (projectInstanc
     return (await ServiceInstanceModel.findAll({ where: { projectInstanceId } }))?.map((sec) => sec.toJSON()) as ProjectServiceInstance[];
 };
 
+export const getServiceInstanceByIdModel = async (instanceId: string): Promise<ProjectServiceInstance | undefined> => {
+    return (await ServiceInstanceModel.findOne({ where: { instanceId } }))?.toJSON() as ProjectServiceInstance;
+};
+
 export const createServiceInstanceModel = async (serviceInstanceData: ProjectServiceInstance): Promise<void> => {
     await ServiceInstanceModel.create({ ...serviceInstanceData, lastUpdated: Date.now(), created: Date.now() });
 };
 
-export const updateServiceInstanceModel = async (id: string, serviceInstanceData: Partial<ProjectServiceInstance>): Promise<void> => {
-    await ServiceInstanceModel.update({ ...serviceInstanceData, lastUpdated: Date.now() }, { where: { id } });
+export const updateServiceInstanceModel = async (instanceId: string, serviceInstanceData: Partial<ProjectServiceInstance>): Promise<void> => {
+    await ServiceInstanceModel.update({ ...serviceInstanceData, lastUpdated: Date.now() }, { where: { instanceId } });
 };
 
-export const deleteServiceInstanceModel = async (id: string) => {
-    return await ServiceInstanceModel.destroy({ where: { id } });
+export const deleteServiceInstanceModel = async (instanceId: string) => {
+    return await ServiceInstanceModel.destroy({ where: { instanceId } });
 };

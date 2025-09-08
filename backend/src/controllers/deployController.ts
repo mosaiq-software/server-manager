@@ -11,8 +11,11 @@ import { appendToDeploymentLog, createProjectInstanceModel, updateProjectInstanc
 import { DockerCompose } from '@mosaiq/nsm-common/dockerComposeTypes';
 import { createServiceInstanceModel } from '@/persistence/serviceInstancePersistence';
 import { startNewProjectInstance } from './projectInstanceController';
+import { buildDockerComposeString } from '@/utils/repositoryUtils';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+export const NSM_LABEL_PREFIX = 'dev.mosaiq.nsm';
+export const NSM_LABEL_SERVICE_INSTANCE_ID = `${NSM_LABEL_PREFIX}.serviceInstanceId`;
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
     let instanceId: string | undefined = undefined;
@@ -64,6 +67,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         const services = project.services || [];
         const serviceInstances: ProjectServiceInstance[] = [];
+        const serviceNameToInstanceId: { [serviceName: string]: string } = {};
         for (const service of services) {
             const instance: ProjectServiceInstance = {
                 instanceId: crypto.randomUUID(),
@@ -77,9 +81,30 @@ export const deployProject = async (projectId: string): Promise<string | undefin
                 expectedContainerState: service.expectedContainerState,
                 collectContainerLogs: service.collectContainerLogs,
             };
+            serviceNameToInstanceId[service.serviceName] = instance.instanceId;
             serviceInstances.push(instance);
             await createServiceInstanceModel(instance);
         }
+
+        const compose: DockerCompose = project.dockerCompose || { services: {} };
+        for (const svc in compose.services) {
+            const rawLabels = compose.services[svc].labels;
+            let labels: DockerCompose['services'][number]['labels'] = {};
+            if (Array.isArray(rawLabels)) {
+                for (const label of rawLabels) {
+                    const [key, ...rest] = label.split('=');
+                    labels[key] = rest.join('=');
+                }
+            } else if (rawLabels) {
+                labels = rawLabels;
+            } else {
+                labels = {};
+            }
+            labels[NSM_LABEL_SERVICE_INSTANCE_ID] = serviceNameToInstanceId[svc];
+            compose.services[svc].labels = labels;
+        }
+
+        const composeString = buildDockerComposeString(compose);
 
         const runCommand = `docker compose -p ${project.id} up --build -d -y --timestamps`;
         const deployable: DeployableProject = {
@@ -91,6 +116,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             timeout: project.timeout || DEFAULT_TIMEOUT,
             logId: instanceId,
             dotenv: dotenv,
+            compose: composeString,
             services: serviceInstances,
         };
         await workerNodePost(project.workerNodeId, WORKER_ROUTES.POST_DEPLOY_PROJECT, deployable);

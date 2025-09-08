@@ -62,6 +62,10 @@ const getDockerComposeFileFromDir = async (dir: string): Promise<{ exists: boole
     return { exists: false, contents: '', parsed: undefined };
 };
 
+export const buildDockerComposeString = (compose: DockerCompose): string => {
+    return YAML.stringify(compose);
+};
+
 const getJsProcessEnvVarsFromDir = async (dir: string): Promise<string[]> => {
     const jsFileExtensions = ['.js', '.mjs', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx'];
     const ignoreDirs = ['node_modules', '.git', '.github', '.vscode'];

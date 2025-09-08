@@ -1,4 +1,4 @@
-import { DeployableControlPlaneConfig, DeployableProject, FullDirectoryMap, RawDockerContainerData, RelativeDirectoryMap } from './types';
+import { DeployableControlPlaneConfig, DeployableProject, FullDirectoryMap, DockerContainerData, RelativeDirectoryMap } from './types';
 
 // ===== ROUTES =====
 export enum WORKER_ROUTES {
@@ -23,5 +23,5 @@ export interface WORKER_RESPONSE {
     [WORKER_ROUTES.POST_FIND_NEXT_FREE_PORTS]: { ports: number[] | null };
     [WORKER_ROUTES.POST_REQUEST_DIRECTORIES]: FullDirectoryMap;
     [WORKER_ROUTES.POST_HANDLE_CONFIGS]: undefined;
-    [WORKER_ROUTES.POST_LIST_CONTAINERS]: { containers: RawDockerContainerData[] };
+    [WORKER_ROUTES.POST_LIST_CONTAINERS]: { containers: DockerContainerData[] };
 }

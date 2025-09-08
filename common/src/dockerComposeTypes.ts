@@ -23,6 +23,7 @@ export interface DockerComposeService {
     extends: DockerComposeServiceExtend | undefined;
     healthcheck: DockerComposeServiceHealthCheck | undefined;
     image: string | undefined;
+    labels: { [key: string]: string } | string[] | undefined;
     logging: DockerComposeServiceLogging | undefined;
     mem_limit: string | undefined;
     mem_reservation: string | undefined;

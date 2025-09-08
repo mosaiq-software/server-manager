@@ -62,6 +62,7 @@ export interface DeployableProject {
     timeout: number;
     logId: string;
     dotenv: string;
+    compose: string;
     services: ProjectServiceInstance[];
 }
 export interface DeployableControlPlaneConfig {
@@ -200,12 +201,12 @@ export interface ProjectServiceInstance extends ProjectService {
     lastUpdated: number;
 }
 
-export interface RawDockerContainerData {
+export interface DockerContainerData {
     Command: string;
     CreatedAt: string;
     ID: string;
     Image: string;
-    Labels: string;
+    Labels: { [key: string]: string };
     LocalVolumes: string;
     Mounts: string;
     Names: string;

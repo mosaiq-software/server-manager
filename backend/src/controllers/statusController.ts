@@ -1,43 +1,25 @@
-import { getStatusByServiceInstanceIdModel } from '@/persistence/workerStatusPersistence';
 import { getProject } from './projectController';
 import { getAllProjectsModel } from '@/persistence/projectPersistence';
 import { getAllWorkerNodes, logWorkerNodeStatus } from './workerNodeController';
-import { RawDockerContainerData, WorkerNode, WorkerStatus } from '@mosaiq/nsm-common/types';
+import { DockerContainerData, DockerStatus, WorkerNode, WorkerStatus } from '@mosaiq/nsm-common/types';
 import { workerNodePost } from '@/utils/workerAPI';
 import { WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
+import { createStatusModel, getStatusByServiceInstanceIdModel, StatusModelType } from '@/persistence/serviceStatusPersistence';
+import { getAllActiveProjectInstancesModel } from '@/persistence/projectInstancePersistence';
+import { getAllActiveServices } from './projectInstanceController';
+import { NSM_LABEL_SERVICE_INSTANCE_ID } from './deployController';
+import { getServiceInstanceByIdModel, updateServiceInstanceModel } from '@/persistence/serviceInstancePersistence';
 
 export const getStatusForProject = async (projectId: string) => {
     const statuses = await getStatusByServiceInstanceIdModel(projectId);
-    const sorted = statuses.sort((a, b) => b.epoch - a.epoch);
+    const sorted = statuses.sort((a, b) => b.created - a.created);
     return sorted;
-};
-
-export const handleAllHealthChecks = async () => {
-    const allHealthCheckURIs = await getAllHealthcheckURIs();
-    for (const projectHealthCheck of allHealthCheckURIs) {
-        for (const uri of projectHealthCheck.uris) {
-            const { status, latency } = await getUriHealth(uri);
-            console.log(`Health check for ${uri}:`, status, `${latency}ms`);
-        }
-    }
-};
-
-const getAllHealthcheckURIs = async () => {
-    const allProjectsModel = await getAllProjectsModel();
-    const allHealthCheckURIs: { projectId: string; uris: string[] }[] = [];
-    for (const project of allProjectsModel) {
-        if (project.healthCheckURIsJson) {
-            allHealthCheckURIs.push({
-                projectId: project.id,
-                uris: JSON.parse(project.healthCheckURIsJson),
-            });
-        }
-    }
-    return allHealthCheckURIs;
 };
 
 export const logContainerStatusesForAllWorkers = async () => {
     const workerNodes = await getAllWorkerNodes();
+    const allActiveServices = await getAllActiveServices();
+
     for (const wn of workerNodes) {
         try {
             const res = await workerNodePost(wn.workerId, WORKER_ROUTES.POST_LIST_CONTAINERS, undefined);
@@ -47,12 +29,41 @@ export const logContainerStatusesForAllWorkers = async () => {
             }
             await logWorkerNodeStatus(wn.workerId, WorkerStatus.ONLINE_STABLE);
             const containers = res.containers;
+            for (const container of containers) {
+                const serviceInstanceIdLabel = container.Labels[NSM_LABEL_SERVICE_INSTANCE_ID];
+                if (serviceInstanceIdLabel && allActiveServices.find((svc) => svc.instanceId === serviceInstanceIdLabel)) {
+                    await logServiceStatus(container, serviceInstanceIdLabel);
+                }
+            }
         } catch (error) {
-            console.error(`Error getting container statuses for worker ${wn.workerId}:`, error);
+            console.error(`Error getting container statuses for worker ${wn}:`, error);
             await logWorkerNodeStatus(wn.workerId, WorkerStatus.UNREACHABLE);
             continue;
         }
     }
+};
+
+const logServiceStatus = async (containerData: DockerContainerData, serviceInstanceId: string) => {
+    const containerStatus = containerData.State as DockerStatus;
+    const serviceInstance = await getServiceInstanceByIdModel(serviceInstanceId);
+    if (!serviceInstance) {
+        console.warn(`Service instance with ID ${serviceInstanceId} not found.`);
+        return;
+    }
+    if (serviceInstance.actualContainerState === containerStatus) {
+        return;
+    }
+    await updateServiceInstanceModel(serviceInstanceId, {
+        actualContainerState: containerStatus,
+    });
+    const statusType: StatusModelType = {
+        id: crypto.randomUUID(),
+        serviceInstanceId: serviceInstanceId,
+        uriStatus: undefined,
+        dockerStatus: containerStatus,
+        created: Date.now(),
+    };
+    await createStatusModel(statusType);
 };
 
 const getUriHealth = async (uri: string) => {
