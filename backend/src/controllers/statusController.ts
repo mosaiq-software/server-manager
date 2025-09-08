@@ -1,6 +1,10 @@
-import { getStatusByServiceInstanceIdModel } from '@/persistence/statusPersistence';
+import { getStatusByServiceInstanceIdModel } from '@/persistence/workerStatusPersistence';
 import { getProject } from './projectController';
 import { getAllProjectsModel } from '@/persistence/projectPersistence';
+import { getAllWorkerNodes, logWorkerNodeStatus } from './workerNodeController';
+import { RawDockerContainerData, WorkerNode, WorkerStatus } from '@mosaiq/nsm-common/types';
+import { workerNodePost } from '@/utils/workerAPI';
+import { WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 
 export const getStatusForProject = async (projectId: string) => {
     const statuses = await getStatusByServiceInstanceIdModel(projectId);
@@ -30,6 +34,25 @@ const getAllHealthcheckURIs = async () => {
         }
     }
     return allHealthCheckURIs;
+};
+
+export const logContainerStatusesForAllWorkers = async () => {
+    const workerNodes = await getAllWorkerNodes();
+    for (const wn of workerNodes) {
+        try {
+            const res = await workerNodePost(wn.workerId, WORKER_ROUTES.POST_LIST_CONTAINERS, undefined);
+            if (!res) {
+                await logWorkerNodeStatus(wn.workerId, WorkerStatus.ONLINE_ERROR);
+                continue;
+            }
+            await logWorkerNodeStatus(wn.workerId, WorkerStatus.ONLINE_STABLE);
+            const containers = res.containers;
+        } catch (error) {
+            console.error(`Error getting container statuses for worker ${wn.workerId}:`, error);
+            await logWorkerNodeStatus(wn.workerId, WorkerStatus.UNREACHABLE);
+            continue;
+        }
+    }
 };
 
 const getUriHealth = async (uri: string) => {

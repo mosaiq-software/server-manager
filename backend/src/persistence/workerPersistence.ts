@@ -12,6 +12,7 @@ WorkerNodeModel.init(
         address: DataTypes.STRING,
         port: DataTypes.NUMBER,
         authToken: DataTypes.STRING,
+        status: DataTypes.STRING,
     },
     { sequelize }
 );

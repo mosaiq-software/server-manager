@@ -37,6 +37,7 @@ export interface ProjectInstanceHeader {
     state: DeploymentState;
     created: number;
     lastUpdated: number;
+    active: boolean;
 }
 export interface ProjectInstance extends ProjectInstanceHeader {
     deploymentLog: string;
@@ -81,6 +82,13 @@ export interface WorkerNode {
     address: string;
     port: number;
     authToken: string;
+    status?: WorkerStatus;
+}
+export enum WorkerStatus {
+    UNKNOWN = 'unknown',
+    ONLINE_STABLE = 'online',
+    ONLINE_ERROR = 'online_error',
+    UNREACHABLE = 'unreachable',
 }
 
 export enum NginxConfigLocationType {
@@ -190,4 +198,21 @@ export interface ProjectServiceInstance extends ProjectService {
     containerLogs: string;
     created: number;
     lastUpdated: number;
+}
+
+export interface RawDockerContainerData {
+    Command: string;
+    CreatedAt: string;
+    ID: string;
+    Image: string;
+    Labels: string;
+    LocalVolumes: string;
+    Mounts: string;
+    Names: string;
+    Networks: string;
+    Ports: string;
+    RunningFor: string;
+    Size: string;
+    State: string;
+    Status: string;
 }

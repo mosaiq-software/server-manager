@@ -17,6 +17,7 @@ export const getProject = async (projectId: string) => {
         state: inst.state,
         created: inst.created,
         lastUpdated: inst.lastUpdated,
+        active: inst.active,
     }));
     const project: Project = {
         id: projectData.id,

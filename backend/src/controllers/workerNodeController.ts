@@ -1,6 +1,7 @@
-import { WorkerNode } from '@mosaiq/nsm-common/types';
+import { WorkerNode, WorkerStatus } from '@mosaiq/nsm-common/types';
 import { getAllWorkerNodesModel, createWorkerNodeModel, updateWorkerNodeModel, deleteWorkerNodeModel, getWorkerNodeByIdModel } from '@/persistence/workerPersistence';
 import { generate32CharKey } from './projectController';
+import { createWorkerStatusModel, WorkerStatusModelType } from '@/persistence/workerStatusPersistence';
 
 export const getAllWorkerNodes = async (): Promise<WorkerNode[]> => {
     const workerNodes = await getAllWorkerNodesModel();
@@ -44,4 +45,23 @@ export const regenerateWorkerNodeKey = async (workerId: string): Promise<string>
     const newKey = generate32CharKey();
     await updateWorkerNodeModel(workerId, { authToken: newKey });
     return newKey;
+};
+
+export const logWorkerNodeStatus = async (workerId: string, status: WorkerStatus): Promise<void> => {
+    const workerNode = await getWorkerNodeById(workerId);
+    if (!workerNode) {
+        throw new Error(`WorkerNode with id ${workerId} not found`);
+    }
+    const currentStatus = workerNode.status;
+    if (currentStatus === status) {
+        return;
+    }
+    await updateWorkerNode(workerId, { status });
+    const statusEntry: WorkerStatusModelType = {
+        id: crypto.randomUUID(),
+        workerId,
+        status,
+        created: Date.now(),
+    };
+    await createWorkerStatusModel(statusEntry);
 };

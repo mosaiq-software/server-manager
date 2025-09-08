@@ -21,10 +21,14 @@ ProjectInstanceModel.init(
         created: DataTypes.NUMBER,
         lastUpdated: DataTypes.NUMBER,
         deploymentLog: DataTypes.TEXT,
+        active: DataTypes.BOOLEAN,
     },
     { sequelize, timestamps: false }
 );
 
+export const getAllActiveProjectInstancesModel = async (): Promise<ProjectInstanceModelType[]> => {
+    return (await ProjectInstanceModel.findAll({ where: { active: true } }))?.map((sec) => sec.toJSON()) as ProjectInstanceModelType[];
+};
 export const getProjectInstancesByProjectIdModel = async (projectId: string): Promise<ProjectInstanceModelType[]> => {
     return (await ProjectInstanceModel.findAll({ where: { projectId } }))?.map((sec) => sec.toJSON()) as ProjectInstanceModelType[];
 };

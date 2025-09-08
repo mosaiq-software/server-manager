@@ -10,24 +10,17 @@ import { buildNginxConfigForProject } from '@/utils/nginxUtils';
 import { appendToDeploymentLog, createProjectInstanceModel, updateProjectInstanceModel } from '@/persistence/projectInstancePersistence';
 import { DockerCompose } from '@mosaiq/nsm-common/dockerComposeTypes';
 import { createServiceInstanceModel } from '@/persistence/serviceInstancePersistence';
+import { startNewProjectInstance } from './projectInstanceController';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 export const deployProject = async (projectId: string): Promise<string | undefined> => {
-    const instanceId = crypto.randomUUID();
+    let instanceId: string | undefined = undefined;
     try {
         let project = await getProject(projectId);
         if (!project) throw new Error('Project not found');
 
-        const projectInstanceHeader: ProjectInstanceHeader = {
-            id: instanceId,
-            projectId: project.id,
-            workerNodeId: project.workerNodeId || 'NO_WORKER_ASSIGNED',
-            state: DeploymentState.DEPLOYING,
-            created: Date.now(),
-            lastUpdated: Date.now(),
-        };
-        await createProjectInstanceModel(projectInstanceHeader);
+        instanceId = await startNewProjectInstance(projectId, project.workerNodeId!);
 
         if (project.state === DeploymentState.DEPLOYING) {
             throw new Error('Project is already deploying');
@@ -88,7 +81,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             await createServiceInstanceModel(instance);
         }
 
-        const runCommand = `docker compose -p ${project.id} up --build -d`;
+        const runCommand = `docker compose -p ${project.id} up --build -d -y --timestamps`;
         const deployable: DeployableProject = {
             projectId: project.id,
             runCommand: runCommand,
@@ -111,7 +104,9 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         await workerNodePost(cpWorkerNode.workerId, WORKER_ROUTES.POST_HANDLE_CONFIGS, depConf);
     } catch (error: any) {
         console.error('Error deploying project:', error);
-        await updateDeploymentLog(instanceId, DeploymentState.FAILED, `Error deploying project: ${error.message}\n`);
+        if (instanceId) {
+            await updateDeploymentLog(instanceId, DeploymentState.FAILED, `Error deploying project: ${error.message}\n`);
+        }
     }
     return instanceId;
 };

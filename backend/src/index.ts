@@ -4,6 +4,8 @@ import { initApp } from './app';
 import { applyGithubFingerprints } from './utils/authGit';
 import { exit } from 'process';
 import { sequelize } from './utils/dbHelper';
+import cron from 'node-cron';
+import { logContainerStatusesForAllWorkers } from './controllers/statusController';
 
 const start = async () => {
     applyGithubFingerprints();
@@ -14,6 +16,13 @@ const start = async () => {
 
     sequelize.sync();
 
+    cron.schedule('*/2 * * * *', () => {
+        try {
+            logContainerStatusesForAllWorkers();
+        } catch (error) {
+            console.error('Error logging container statuses:', error);
+        }
+    });
     process.on('SIGTERM', async () => {
         console.warn('Received SIGTERM, Ignoring...');
     });
