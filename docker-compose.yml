@@ -21,7 +21,7 @@ services:
             - '${API_PORT}:${API_PORT}'
         restart: always
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://0.0.0.0:${API_PORT}/']
+            test: [ 'CMD', 'curl', '-f', 'http://0.0.0.0:${API_PORT}/' ]
             interval: 15s
             timeout: 10s
             retries: 5
@@ -50,11 +50,6 @@ services:
             - type: bind
               source: ${NSM_OUTPUT_PATH}
               target: ${NSM_OUTPUT_PATH}
-              bind:
-                  create_host_path: true
-            - type: bind
-              source: ${CONTROL_PLANE_WORKER_NGINX_DIR}
-              target: ${CONTROL_PLANE_WORKER_NGINX_DIR}
               bind:
                   create_host_path: true
         env_file:

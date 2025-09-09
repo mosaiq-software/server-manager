@@ -106,7 +106,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         const composeString = buildDockerComposeString(compose);
 
-        const runCommand = `docker compose -p ${project.id} up --build -d -y --timestamps`;
+        const runCommand = `docker compose -p ${project.id} up --build -d`;
         const deployable: DeployableProject = {
             projectId: project.id,
             runCommand: runCommand,
