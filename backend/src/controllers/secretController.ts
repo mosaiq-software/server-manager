@@ -41,8 +41,8 @@ export const applyRepoData = async (repoData: RepoData, projectId: string) => {
                 projectId: projectId,
                 secretName: currentSecret.secretName,
                 secretValue: currentSecret.secretValue,
+                variable: currentSecret.variable,
                 secretPlaceholder: uSec.secretPlaceholder,
-                variable: uSec.variable,
             };
         }
         return uSec;
