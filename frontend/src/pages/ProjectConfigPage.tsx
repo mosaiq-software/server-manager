@@ -1,4 +1,4 @@
-import { ActionIcon, ActionIconGroup, Alert, Button, Center, Combobox, CopyButton, Divider, Fieldset, Grid, Group, Loader, Menu, Modal, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
+import { ActionIcon, ActionIconGroup, Alert, Button, Center, Code, Combobox, CopyButton, Divider, Fieldset, Grid, Group, HoverCard, List, Loader, Menu, Modal, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeploymentState, DockerStatus, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, ProjectService, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
@@ -11,7 +11,7 @@ import { ProjectHeader } from '@/components/ProjectHeader';
 import { assembleDotenv, extractVariables, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
-import { MdOutlineCode, MdOutlineDns, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
+import { MdOutlineCode, MdOutlineDns, MdOutlineInfo, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -302,7 +302,37 @@ const ProjectConfigPage = () => {
                             fz=".75rem"
                             c="dimmed"
                         >
-                            Pulled in from the repository
+                            Pulled from the repository.
+                            <HoverCard
+                                position="right"
+                                withArrow
+                            >
+                                <HoverCard.Target>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        size="xs"
+                                    >
+                                        <MdOutlineInfo />
+                                    </ActionIcon>
+                                </HoverCard.Target>
+                                <HoverCard.Dropdown>
+                                    <Text fz="xs">Environment variable are searched for in order of:</Text>
+                                    <List fz="xs">
+                                        <List.Item>
+                                            Vars in any file beginning with<Code>.env</Code> (e.g. <Code>.env, .env.sample, .env.production</Code>)
+                                        </List.Item>
+                                        <List.Item>
+                                            Any text matching <Code>{'${VAR_NAME}'}</Code> in a Docker Compose file (<Code>docker-compose.y(a)ml</Code> or <Code>compose.y(a)ml</Code>)
+                                        </List.Item>
+                                        <List.Item>
+                                            Any text matching <Code>{'process.env.VAR_NAME'}</Code> in a Javascript or Typescript file (<Code>js, ts, cjs, cts, mjs, mts, jsx, tsx</Code>)
+                                            <List.Item>
+                                                Note: Only variables in the form of <Code>process.env.VAR_NAME</Code> are detected. More complex usages (e.g. <Code>{`process.env['VAR_NAME']`}</Code>) are not detected.
+                                            </List.Item>
+                                        </List.Item>
+                                    </List>
+                                </HoverCard.Dropdown>
+                            </HoverCard>
                         </Text>
                     </Stack>
                     <Tooltip label="Sync to Repo">
