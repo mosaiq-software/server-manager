@@ -11,7 +11,7 @@ import { ProjectHeader } from '@/components/ProjectHeader';
 import { assembleDotenv, extractVariables, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
-import { MdOutlineCode, MdOutlineDns, MdOutlineLan, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
+import { MdOutlineCode, MdOutlineDns, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -198,7 +198,7 @@ const ProjectConfigPage = () => {
                         </Group>
                     </Alert>
                 )}
-                <Title order={5}>General</Title>
+                <Title order={4}>General</Title>
                 <Group
                     align="flex-start"
                     justify="space-evenly"
@@ -211,20 +211,26 @@ const ProjectConfigPage = () => {
                             <TextInput
                                 w="30%"
                                 required
+                                description="User or Organization"
                                 label="Repository Owner"
+                                placeholder="mosaiq-software"
                                 value={project.repoOwner}
                                 onChange={(e) => updateProject({ repoOwner: e.currentTarget.value })}
                             />
                             <TextInput
                                 w="30%"
                                 required
+                                description="As seen in the URL"
                                 label="Repository Name"
+                                placeholder="server-manager"
                                 value={project.repoName}
                                 onChange={(e) => updateProject({ repoName: e.currentTarget.value })}
                             />
                             <TextInput
                                 w="30%"
+                                description="Optional branch to deploy from"
                                 label="Repository Branch"
+                                placeholder="main"
                                 value={project.repoBranch}
                                 onChange={(e) => updateProject({ repoBranch: e.currentTarget.value })}
                             />
@@ -236,8 +242,9 @@ const ProjectConfigPage = () => {
                             href={`https://github.com/${project.repoOwner}/${project.repoName}.git`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            style={{ display: 'flex', alignItems: 'center', gap: 4 }}
                         >
-                            {`github.com/${project.repoOwner}/${project.repoName}.git`}
+                            {`https://github.com/${project.repoOwner}/${project.repoName}.git`} <MdOutlineLaunch />
                         </Text>
                     </Stack>
                     <Select
@@ -267,11 +274,16 @@ const ProjectConfigPage = () => {
                             }
                         }}
                     />
-                    <Switch
-                        label="Allow CI/CD"
-                        checked={project.allowCICD}
-                        onChange={(e) => updateProject({ allowCICD: e.currentTarget.checked })}
-                    />
+                    <Stack
+                        gap={2}
+                        align="center"
+                    >
+                        <Text fz="var(--input-label-size, var(--mantine-font-size-sm))">Allow CI/CD</Text>
+                        <Switch
+                            checked={project.allowCICD}
+                            onChange={(e) => updateProject({ allowCICD: e.currentTarget.checked })}
+                        />
+                    </Stack>
                 </Group>
                 <Divider my="sm" />
                 <NginxEditor
@@ -280,82 +292,72 @@ const ProjectConfigPage = () => {
                     project={project}
                 />
                 <Divider my="sm" />
+                <Group
+                    align="flex-start"
+                    justify="flex-start"
+                >
+                    <Stack>
+                        <Title order={4}>System Configuration</Title>
+                        <Text
+                            fz=".75rem"
+                            c="dimmed"
+                        >
+                            Pulled in from the repository
+                        </Text>
+                    </Stack>
+                    <Tooltip label="Sync to Repo">
+                        <ActionIcon
+                            variant="light"
+                            onClick={handleSyncToRepo}
+                            size="lg"
+                        >
+                            <MdOutlineRefresh />
+                        </ActionIcon>
+                    </Tooltip>
+                </Group>
                 <Stack gap="xs">
-                    <Group
-                        align="flex-start"
-                        justify="flex-start"
-                    >
-                        <Stack>
-                            <Title order={5}>Environment Variables</Title>
-                            <Text
-                                fz=".75rem"
-                                c="dimmed"
-                            >
-                                Pulled in from the repository
-                            </Text>
-                        </Stack>
-                        <Tooltip label="Sync to Repo">
-                            <ActionIcon
-                                variant="light"
-                                onClick={handleSyncToRepo}
-                            >
-                                <MdOutlineRefresh />
-                            </ActionIcon>
-                        </Tooltip>
-                        {!project.hasDotenv && (
-                            <Alert
-                                color="yellow"
-                                variant="light"
-                                title="No Env File"
-                            >
-                                This root of this project does not have any files starting with `.env`.
-                            </Alert>
-                        )}
-                    </Group>
-                    <Grid w="70%">
-                        <Grid.Col span={3}>
-                            <Title order={6}>Env Variable</Title>
-                        </Grid.Col>
-                        <Grid.Col span={9}>
-                            <Title order={6}>Value</Title>
-                        </Grid.Col>
-                        {secrets.map((secret) => {
-                            return (
-                                <EnvVarRow
-                                    key={secret.secretName}
-                                    secret={secret}
-                                    onChange={updateSecret}
-                                    vars={dynamicEnvVariables}
-                                />
-                            );
-                        })}
-                    </Grid>
+                    <Title order={5}>Environment Variables</Title>
+                    {project.hasDotenv ? (
+                        <Grid w="70%">
+                            <Grid.Col span={3}>
+                                <Title order={6}>Env Variable</Title>
+                            </Grid.Col>
+                            <Grid.Col span={9}>
+                                <Title order={6}>Value</Title>
+                            </Grid.Col>
+                            {secrets.map((secret) => {
+                                return (
+                                    <EnvVarRow
+                                        key={secret.secretName}
+                                        secret={secret}
+                                        onChange={updateSecret}
+                                        vars={dynamicEnvVariables}
+                                    />
+                                );
+                            })}
+                        </Grid>
+                    ) : (
+                        <Alert
+                            color="yellow"
+                            variant="light"
+                            title="No Env File"
+                        >
+                            This root of this project does not have any files starting with `.env`.
+                        </Alert>
+                    )}
                 </Stack>
                 <Space h="xl" />
                 <Stack gap="xs">
-                    <Group
-                        align="flex-start"
-                        justify="flex-start"
-                    >
-                        <Stack>
-                            <Title order={5}>Docker Compose Services</Title>
-                            <Text
-                                fz=".75rem"
-                                c="dimmed"
-                            >
-                                Pulled in from the repository
-                            </Text>
-                        </Stack>
-                        {!project.hasDockerCompose && (
-                            <Alert
-                                color="yellow"
-                                variant="light"
-                                title="No Docker Compose File"
-                            >
-                                This root of this project does not have any files starting with `compose.y(a)ml` or `docker-compose.y(a)ml`.
-                            </Alert>
-                        )}
-                    </Group>
+                    <Title order={5}>Docker Compose Services</Title>
+                    {!project.hasDockerCompose && (
+                        <Alert
+                            color="yellow"
+                            variant="light"
+                            title="No Docker Compose File"
+                        >
+                            This root of this project does not have any files starting with `compose.y(a)ml` or `docker-compose.y(a)ml`.
+                        </Alert>
+                    )}
                     <Group>
                         {project.services?.map((service) => (
                             <Service
