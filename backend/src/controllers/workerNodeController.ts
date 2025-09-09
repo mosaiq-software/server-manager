@@ -23,11 +23,13 @@ export const createWorkerNode = async (workerId: string, address: string, port: 
             throw new Error(`WorkerNode with address ${address} already exists`);
         }
     }
+    const cpip = process.env.PRODUCTION !== 'true' ? '127.0.0.1' : process.env.CONTROL_PLANE_IP;
     const wn: WorkerNode = {
         workerId: workerId,
         address: address,
         port: port,
         authToken: generate32CharKey(),
+        isControlPlaneWorker: cpip === address,
     };
     await createWorkerNodeModel(wn);
     return wn;

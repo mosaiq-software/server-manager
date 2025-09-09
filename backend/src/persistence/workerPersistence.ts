@@ -13,6 +13,7 @@ WorkerNodeModel.init(
         port: DataTypes.NUMBER,
         authToken: DataTypes.STRING,
         status: DataTypes.STRING,
+        isControlPlaneWorker: DataTypes.BOOLEAN,
     },
     { sequelize }
 );

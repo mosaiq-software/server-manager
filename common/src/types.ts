@@ -84,6 +84,7 @@ export interface WorkerNode {
     port: number;
     authToken: string;
     status?: WorkerStatus;
+    isControlPlaneWorker: boolean;
 }
 export enum WorkerStatus {
     UNKNOWN = 'unknown',

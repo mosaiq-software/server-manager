@@ -15,6 +15,7 @@ const WorkersPage = () => {
         address: '',
         port: 0,
         authToken: '',
+        isControlPlaneWorker: false,
     });
 
     const sanitizeName = (name: string) => {
@@ -178,15 +179,13 @@ const WorkersPage = () => {
                 <Button onClick={() => setModal('create')}>Add Worker Node</Button>
             </Group>
             <Text>These are the worker nodes in the NSM network.</Text>
-            {!workerCtx.controlPlaneWorkerExists && (
+            {!workerCtx.controlPlaneWorker && (
                 <Alert
                     variant="filled"
                     color="red"
                     title="No Control Plane Worker Node"
                 >
-                    <Text>
-                        The control plane worker node is not set or does not exist. Set the <code>{workerCtx.controlPlaneWorkerId}</code> worker deployed on the same machine as the control plane.
-                    </Text>
+                    <Text>The control plane worker node is not set or does not exist. Set a worker deployed on the same machine as the control plane.</Text>
                 </Alert>
             )}
             <Table>
@@ -204,7 +203,7 @@ const WorkersPage = () => {
                     {workerCtx.workers.map((worker) => (
                         <Table.Tr
                             key={worker.workerId}
-                            bg={worker.workerId === workerCtx.controlPlaneWorkerId ? '#e7f2fb' : undefined}
+                            bg={worker.isControlPlaneWorker ? '#e7f2fb' : undefined}
                         >
                             <Table.Td>{worker.workerId}</Table.Td>
                             <Table.Td>{worker.address}</Table.Td>
