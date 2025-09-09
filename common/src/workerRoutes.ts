@@ -8,6 +8,7 @@ export enum WORKER_ROUTES {
     POST_REQUEST_DIRECTORIES = '/requestDirectories',
     POST_HANDLE_CONFIGS = '/handleConfigs',
     POST_LIST_CONTAINERS = '/containers',
+    POST_GET_CONTAINER_LOGS = '/containerLogs',
 }
 export interface WORKER_BODY {
     //POST
@@ -16,6 +17,7 @@ export interface WORKER_BODY {
     [WORKER_ROUTES.POST_REQUEST_DIRECTORIES]: RelativeDirectoryMap;
     [WORKER_ROUTES.POST_HANDLE_CONFIGS]: DeployableControlPlaneConfig;
     [WORKER_ROUTES.POST_LIST_CONTAINERS]: undefined;
+    [WORKER_ROUTES.POST_GET_CONTAINER_LOGS]: { containerId: string };
 }
 export interface WORKER_RESPONSE {
     //POST
@@ -24,4 +26,5 @@ export interface WORKER_RESPONSE {
     [WORKER_ROUTES.POST_REQUEST_DIRECTORIES]: FullDirectoryMap;
     [WORKER_ROUTES.POST_HANDLE_CONFIGS]: undefined;
     [WORKER_ROUTES.POST_LIST_CONTAINERS]: { containers: DockerContainerData[] };
+    [WORKER_ROUTES.POST_GET_CONTAINER_LOGS]: { logs: string | null };
 }
