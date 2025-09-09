@@ -106,10 +106,11 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         const composeString = buildDockerComposeString(compose);
 
+        const cleanupCommand = `docker compose -p ${project.id} down && docker system prune -af`;
         const runCommand = `docker compose -p ${project.id} up --build -d`;
         const deployable: DeployableProject = {
             projectId: project.id,
-            runCommand: runCommand,
+            runCommand: `(${cleanupCommand} && ${runCommand})`,
             repoName: project.repoName,
             repoOwner: project.repoOwner,
             repoBranch: project.repoBranch,
