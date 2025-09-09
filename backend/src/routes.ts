@@ -1,4 +1,4 @@
-import { createProject, getAllProjects, getProject, resetDeploymentKey, syncProjectToRepoData, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
+import { createProject, deleteProject, getAllProjects, getProject, resetDeploymentKey, syncProjectToRepoData, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
 import { deployProject, updateDeploymentLog } from '@/controllers/deployController';
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 import express from 'express';
@@ -7,6 +7,7 @@ import { updateEnvironmentVariable } from '@/controllers/secretController';
 import { createWorkerNode, deleteWorkerNode, getAllWorkerNodes, regenerateWorkerNodeKey, updateWorkerNode } from './controllers/workerNodeController';
 import { getProjectInstanceByIdModel } from './persistence/projectInstancePersistence';
 import { getProjectInstance } from './controllers/projectInstanceController';
+import { logContainerStatusesForAllWorkers } from './controllers/statusController';
 
 const router = express.Router();
 
@@ -129,6 +130,17 @@ router.get(API_ROUTES.GET_WORKER_NODES, async (req, res) => {
     }
 });
 
+router.get(API_ROUTES.GET_WORKER_STATUSES, async (req, res) => {
+    try {
+        const workerStatuses = await logContainerStatusesForAllWorkers();
+        const response: API_RETURN[API_ROUTES.GET_WORKER_STATUSES] = workerStatuses;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error getting worker statuses', e);
+        res.status(500).send();
+    }
+});
+
 router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_PROJECT];
     try {
@@ -158,6 +170,22 @@ router.post(API_ROUTES.POST_UPDATE_PROJECT, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error updating project', e);
+        res.status(500).send();
+    }
+});
+
+router.post(API_ROUTES.POST_DELETE_PROJECT, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_DELETE_PROJECT];
+    try {
+        if (!params.projectId) {
+            res.status(400).send('No projectId');
+            return;
+        }
+        await deleteProject(params.projectId);
+        const response: API_RETURN[API_ROUTES.POST_DELETE_PROJECT] = undefined;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error deleting project', e);
         res.status(500).send();
     }
 });

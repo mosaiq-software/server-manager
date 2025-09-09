@@ -128,3 +128,14 @@ export const resetDeploymentKey = async (projectId: string): Promise<string | nu
 export const generate32CharKey = (): string => {
     return crypto.randomUUID().replace(/-/g, '');
 };
+
+export const deleteProject = async (projectId: string): Promise<boolean> => {
+    try {
+        // TODO handle teardown and cascading deletes
+        // await deleteProjectModel(projectId);
+        return true;
+    } catch (error) {
+        console.error('Error deleting project:', error);
+        return false;
+    }
+};

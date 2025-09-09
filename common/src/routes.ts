@@ -9,11 +9,12 @@ export enum API_ROUTES {
     GET_PROJECTS = '/projects',
     GET_PROJECT_INSTANCE = '/project-instance/:projectInstanceId',
     GET_WORKER_NODES = '/worker-nodes',
-    GET_WORKER_NODE_HEALTHCHECK = '/worker-nodes/:workerId/healthcheck',
+    GET_WORKER_STATUSES = '/worker-nodes/status',
 
     //POST
     POST_CREATE_PROJECT = '/project/create',
     POST_UPDATE_PROJECT = '/project/:projectId/update',
+    POST_DELETE_PROJECT = '/project/:projectId/delete',
     POST_RESET_DEPLOYMENT_KEY = '/project/:projectId/reset-key',
     POST_UPDATE_ENV_VAR = '/project/:projectId/updateEnvVar',
     POST_SYNC_TO_REPO = '/project/:projectId/sync-to-repo',
@@ -31,11 +32,12 @@ export interface API_PARAMS {
     [API_ROUTES.GET_PROJECTS]: {};
     [API_ROUTES.GET_PROJECT_INSTANCE]: { projectInstanceId: string };
     [API_ROUTES.GET_WORKER_NODES]: {};
-    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: { workerId: string };
+    [API_ROUTES.GET_WORKER_STATUSES]: {};
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: {};
     [API_ROUTES.POST_UPDATE_PROJECT]: { projectId: string };
+    [API_ROUTES.POST_DELETE_PROJECT]: { projectId: string };
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: { projectId: string };
     [API_ROUTES.POST_UPDATE_ENV_VAR]: { projectId: string };
     [API_ROUTES.POST_SYNC_TO_REPO]: { projectId: string };
@@ -54,11 +56,12 @@ export interface API_BODY {
     [API_ROUTES.GET_PROJECTS]: undefined;
     [API_ROUTES.GET_PROJECT_INSTANCE]: undefined;
     [API_ROUTES.GET_WORKER_NODES]: undefined;
-    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: undefined;
+    [API_ROUTES.GET_WORKER_STATUSES]: undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
     [API_ROUTES.POST_UPDATE_PROJECT]: Partial<Project>;
+    [API_ROUTES.POST_DELETE_PROJECT]: {};
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: {};
     [API_ROUTES.POST_UPDATE_ENV_VAR]: Secret;
     [API_ROUTES.POST_SYNC_TO_REPO]: {};
@@ -76,11 +79,12 @@ export interface API_RETURN {
     [API_ROUTES.GET_PROJECTS]: Project[];
     [API_ROUTES.GET_PROJECT_INSTANCE]: ProjectInstance | undefined;
     [API_ROUTES.GET_WORKER_NODES]: WorkerNode[] | undefined;
-    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: { ping: number | undefined; status: string } | undefined;
+    [API_ROUTES.GET_WORKER_STATUSES]: undefined; //TODO
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
     [API_ROUTES.POST_UPDATE_PROJECT]: undefined;
+    [API_ROUTES.POST_DELETE_PROJECT]: undefined;
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: string | undefined;
     [API_ROUTES.POST_UPDATE_ENV_VAR]: undefined;
     [API_ROUTES.POST_SYNC_TO_REPO]: Project | undefined;
@@ -100,11 +104,12 @@ export interface API_AUTH {
     [API_ROUTES.GET_PROJECTS]: string;
     [API_ROUTES.GET_PROJECT_INSTANCE]: string;
     [API_ROUTES.GET_WORKER_NODES]: string;
-    [API_ROUTES.GET_WORKER_NODE_HEALTHCHECK]: undefined;
+    [API_ROUTES.GET_WORKER_STATUSES]: string;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: string;
     [API_ROUTES.POST_UPDATE_PROJECT]: string;
+    [API_ROUTES.POST_DELETE_PROJECT]: string;
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: string;
     [API_ROUTES.POST_UPDATE_ENV_VAR]: string;
     [API_ROUTES.POST_SYNC_TO_REPO]: string;

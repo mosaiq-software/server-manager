@@ -68,7 +68,7 @@ const WorkersPage = () => {
                     <TextInput
                         label="Address"
                         placeholder="192.168.1.206"
-                        description="The address of the worker node. Must be on the local network."
+                        description="The address of the worker node. Must be on the control plane's network."
                         value={newWorker.address || ''}
                         onChange={(e) => setNewWorker({ ...newWorker, address: e.target.value })}
                     />

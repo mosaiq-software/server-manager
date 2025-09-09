@@ -55,6 +55,7 @@ const logServiceStatus = async (containerData: DockerContainerData, serviceInsta
     }
     await updateServiceInstanceModel(serviceInstanceId, {
         actualContainerState: containerStatus,
+        containerId: containerData.ID,
     });
     const statusType: StatusModelType = {
         id: crypto.randomUUID(),

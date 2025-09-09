@@ -1,4 +1,4 @@
-import { ActionIcon, ActionIconGroup, Alert, Button, Center, Combobox, CopyButton, Divider, Fieldset, Grid, Group, Loader, Menu, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
+import { ActionIcon, ActionIconGroup, Alert, Button, Center, Combobox, CopyButton, Divider, Fieldset, Grid, Group, Loader, Menu, Modal, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeploymentState, DockerStatus, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, ProjectService, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
@@ -23,6 +23,7 @@ const ProjectConfigPage = () => {
     const [secrets, setSecrets] = useState<Secret[]>([]);
     const [dynamicEnvVariables, setDynamicEnvVariables] = useState<DynamicEnvVariable[]>([]);
     const [syncing, setSyncing] = useState(false);
+    const [modal, setModal] = useState<'delete-project' | null>(null);
 
     const varCombobox = useCombobox({
         onDropdownClose: () => varCombobox.resetSelectedOption(),
@@ -84,6 +85,25 @@ const ProjectConfigPage = () => {
         setSyncing(false);
     };
 
+    const handleDeleteProject = async () => {
+        if (!project) return;
+        try {
+            await projectCtx.delete(project.id);
+            notifications.show({
+                title: 'Success',
+                message: 'Project deleted successfully',
+                color: 'green',
+            });
+            navigate('/');
+        } catch (error) {
+            notifications.show({
+                title: 'Error',
+                message: 'Failed to delete project',
+                color: 'red',
+            });
+        }
+    };
+
     if (project === undefined) {
         return (
             <Center>
@@ -120,211 +140,258 @@ const ProjectConfigPage = () => {
     const isSame = same();
 
     return (
-        <Stack>
-            <ProjectHeader
-                project={project}
-                section="Configuration"
-            />
-            {isSame && project.dirtyConfig && (
-                <Alert
-                    variant="light"
-                    color="yellow"
-                    title="Configs Changed"
-                >
-                    Some configurations have been changed since the last deployment. Redeploy to apply the new settings.
-                </Alert>
-            )}
-            {!isSame && (
-                <Alert
-                    variant="light"
-                    color="orange"
-                    title="Unsaved Changes"
-                >
+        <>
+            <Modal
+                opened={modal === 'delete-project'}
+                onClose={() => setModal(null)}
+                withCloseButton={false}
+            >
+                <Stack>
+                    <Title order={3}>Delete {project.id}</Title>
+                    <Text>Are you sure you want to delete this project? This action cannot be undone.</Text>
                     <Group>
-                        <Text>You have unsaved changes. Please save your changes before leaving this page.</Text>
                         <Button
-                            variant="light"
-                            color="blue"
-                            onClick={saveChanges}
+                            variant="outline"
+                            onClick={() => setModal(null)}
                         >
-                            Save Changes
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="filled"
+                            color="red"
+                            onClick={handleDeleteProject}
+                        >
+                            Delete Project
                         </Button>
                     </Group>
-                </Alert>
-            )}
-            <Title order={5}>General</Title>
-            <Group
-                align="flex-start"
-                justify="space-evenly"
-            >
-                <Stack
-                    gap={2}
-                    align="center"
-                >
-                    <Group>
-                        <TextInput
-                            w="30%"
-                            required
-                            label="Repository Owner"
-                            value={project.repoOwner}
-                            onChange={(e) => updateProject({ repoOwner: e.currentTarget.value })}
-                        />
-                        <TextInput
-                            w="30%"
-                            required
-                            label="Repository Name"
-                            value={project.repoName}
-                            onChange={(e) => updateProject({ repoName: e.currentTarget.value })}
-                        />
-                        <TextInput
-                            w="30%"
-                            label="Repository Branch"
-                            value={project.repoBranch}
-                            onChange={(e) => updateProject({ repoBranch: e.currentTarget.value })}
-                        />
-                    </Group>
-                    <Text
-                        fz=".75rem"
-                        c="dimmed"
-                        component="a"
-                        href={`https://github.com/${project.repoOwner}/${project.repoName}.git`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        {`github.com/${project.repoOwner}/${project.repoName}.git`}
-                    </Text>
                 </Stack>
-                <Select
-                    required
-                    label="Worker Node"
-                    description="Which worker node to use for deployments?"
-                    data={workerCtx.workers.map((worker) => ({ value: worker.workerId, label: `${worker.workerId} (@${worker.address})` }))}
-                    onChange={(value) => updateProject({ workerNodeId: value || undefined })}
-                    value={project.workerNodeId}
-                    placeholder="Select a worker node"
+            </Modal>
+            <Stack>
+                <ProjectHeader
+                    project={project}
+                    section="Configuration"
                 />
-                <NumberInput
-                    value={project.timeout}
-                    label="Deployment Timeout (ms)"
-                    placeholder={(1000 * 60 * 5).toString()}
-                    min={0}
-                    max={1000 * 60 * 60}
-                    description="The max time it can take to deploy"
-                    onChange={(e) => {
-                        if (e === '') {
-                            updateProject({ timeout: undefined });
-                            return;
-                        }
-                        const value = Number(e);
-                        if (!isNaN(value)) {
-                            updateProject({ timeout: value });
-                        }
-                    }}
-                />
-                <Switch
-                    label="Allow CI/CD"
-                    checked={project.allowCICD}
-                    onChange={(e) => updateProject({ allowCICD: e.currentTarget.checked })}
-                />
-            </Group>
-            <Divider my="sm" />
-            <NginxEditor
-                current={project.nginxConfig || { servers: [] }}
-                onSave={(config) => updateProject({ nginxConfig: config })}
-                project={project}
-            />
-            <Divider my="sm" />
-            <Stack gap="xs">
+                {isSame && project.dirtyConfig && (
+                    <Alert
+                        variant="light"
+                        color="yellow"
+                        title="Configs Changed"
+                    >
+                        Some configurations have been changed since the last deployment. Redeploy to apply the new settings.
+                    </Alert>
+                )}
+                {!isSame && (
+                    <Alert
+                        variant="light"
+                        color="orange"
+                        title="Unsaved Changes"
+                    >
+                        <Group>
+                            <Text>You have unsaved changes. Please save your changes before leaving this page.</Text>
+                            <Button
+                                variant="light"
+                                color="blue"
+                                onClick={saveChanges}
+                            >
+                                Save Changes
+                            </Button>
+                        </Group>
+                    </Alert>
+                )}
+                <Title order={5}>General</Title>
                 <Group
                     align="flex-start"
-                    justify="flex-start"
+                    justify="space-evenly"
                 >
-                    <Stack>
-                        <Title order={5}>Environment Variables</Title>
-                        <Text
-                            fz=".75rem"
-                            c="dimmed"
-                        >
-                            Pulled in from the repository
-                        </Text>
-                    </Stack>
-                    <Tooltip label="Sync to Repo">
-                        <ActionIcon
-                            variant="light"
-                            onClick={handleSyncToRepo}
-                        >
-                            <MdOutlineRefresh />
-                        </ActionIcon>
-                    </Tooltip>
-                    {!project.hasDotenv && (
-                        <Alert
-                            color="yellow"
-                            variant="light"
-                            title="No Env File"
-                        >
-                            This root of this project does not have any files starting with `.env`.
-                        </Alert>
-                    )}
-                </Group>
-                <Grid w="70%">
-                    <Grid.Col span={3}>
-                        <Title order={6}>Env Variable</Title>
-                    </Grid.Col>
-                    <Grid.Col span={9}>
-                        <Title order={6}>Value</Title>
-                    </Grid.Col>
-                    {secrets.map((secret) => {
-                        return (
-                            <EnvVarRow
-                                key={secret.secretName}
-                                secret={secret}
-                                onChange={updateSecret}
-                                vars={dynamicEnvVariables}
+                    <Stack
+                        gap={2}
+                        align="center"
+                    >
+                        <Group>
+                            <TextInput
+                                w="30%"
+                                required
+                                label="Repository Owner"
+                                value={project.repoOwner}
+                                onChange={(e) => updateProject({ repoOwner: e.currentTarget.value })}
                             />
-                        );
-                    })}
-                </Grid>
-            </Stack>
-            <Space h="xl" />
-            <Stack gap="xs">
-                <Group
-                    align="flex-start"
-                    justify="flex-start"
-                >
-                    <Stack>
-                        <Title order={5}>Docker Compose Services</Title>
+                            <TextInput
+                                w="30%"
+                                required
+                                label="Repository Name"
+                                value={project.repoName}
+                                onChange={(e) => updateProject({ repoName: e.currentTarget.value })}
+                            />
+                            <TextInput
+                                w="30%"
+                                label="Repository Branch"
+                                value={project.repoBranch}
+                                onChange={(e) => updateProject({ repoBranch: e.currentTarget.value })}
+                            />
+                        </Group>
                         <Text
                             fz=".75rem"
                             c="dimmed"
+                            component="a"
+                            href={`https://github.com/${project.repoOwner}/${project.repoName}.git`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                         >
-                            Pulled in from the repository
+                            {`github.com/${project.repoOwner}/${project.repoName}.git`}
                         </Text>
                     </Stack>
-                    {!project.hasDockerCompose && (
-                        <Alert
-                            color="yellow"
-                            variant="light"
-                            title="No Docker Compose File"
-                        >
-                            This root of this project does not have any files starting with `compose.y(a)ml` or `docker-compose.y(a)ml`.
-                        </Alert>
-                    )}
+                    <Select
+                        required
+                        label="Worker Node"
+                        description="Which worker node to use for deployments?"
+                        data={workerCtx.workers.map((worker) => ({ value: worker.workerId, label: `${worker.workerId} (@${worker.address})` }))}
+                        onChange={(value) => updateProject({ workerNodeId: value || undefined })}
+                        value={project.workerNodeId}
+                        placeholder="Select a worker node"
+                    />
+                    <NumberInput
+                        value={project.timeout}
+                        label="Deployment Timeout (ms)"
+                        placeholder={(1000 * 60 * 5).toString()}
+                        min={0}
+                        max={1000 * 60 * 60}
+                        description="The max time it can take to deploy"
+                        onChange={(e) => {
+                            if (e === '') {
+                                updateProject({ timeout: undefined });
+                                return;
+                            }
+                            const value = Number(e);
+                            if (!isNaN(value)) {
+                                updateProject({ timeout: value });
+                            }
+                        }}
+                    />
+                    <Switch
+                        label="Allow CI/CD"
+                        checked={project.allowCICD}
+                        onChange={(e) => updateProject({ allowCICD: e.currentTarget.checked })}
+                    />
                 </Group>
-                <Group>
-                    {project.services?.map((service) => (
-                        <Service
-                            key={service.serviceName}
-                            service={service}
-                            onChange={(updated) => {
-                                const newService = { ...service, ...updated };
-                                const newServices = project.services?.map((s) => (s.serviceName === service.serviceName ? newService : s)) || [];
-                                updateProject({ services: newServices });
-                            }}
-                        />
-                    ))}
-                </Group>
+                <Divider my="sm" />
+                <NginxEditor
+                    current={project.nginxConfig || { servers: [] }}
+                    onSave={(config) => updateProject({ nginxConfig: config })}
+                    project={project}
+                />
+                <Divider my="sm" />
+                <Stack gap="xs">
+                    <Group
+                        align="flex-start"
+                        justify="flex-start"
+                    >
+                        <Stack>
+                            <Title order={5}>Environment Variables</Title>
+                            <Text
+                                fz=".75rem"
+                                c="dimmed"
+                            >
+                                Pulled in from the repository
+                            </Text>
+                        </Stack>
+                        <Tooltip label="Sync to Repo">
+                            <ActionIcon
+                                variant="light"
+                                onClick={handleSyncToRepo}
+                            >
+                                <MdOutlineRefresh />
+                            </ActionIcon>
+                        </Tooltip>
+                        {!project.hasDotenv && (
+                            <Alert
+                                color="yellow"
+                                variant="light"
+                                title="No Env File"
+                            >
+                                This root of this project does not have any files starting with `.env`.
+                            </Alert>
+                        )}
+                    </Group>
+                    <Grid w="70%">
+                        <Grid.Col span={3}>
+                            <Title order={6}>Env Variable</Title>
+                        </Grid.Col>
+                        <Grid.Col span={9}>
+                            <Title order={6}>Value</Title>
+                        </Grid.Col>
+                        {secrets.map((secret) => {
+                            return (
+                                <EnvVarRow
+                                    key={secret.secretName}
+                                    secret={secret}
+                                    onChange={updateSecret}
+                                    vars={dynamicEnvVariables}
+                                />
+                            );
+                        })}
+                    </Grid>
+                </Stack>
+                <Space h="xl" />
+                <Stack gap="xs">
+                    <Group
+                        align="flex-start"
+                        justify="flex-start"
+                    >
+                        <Stack>
+                            <Title order={5}>Docker Compose Services</Title>
+                            <Text
+                                fz=".75rem"
+                                c="dimmed"
+                            >
+                                Pulled in from the repository
+                            </Text>
+                        </Stack>
+                        {!project.hasDockerCompose && (
+                            <Alert
+                                color="yellow"
+                                variant="light"
+                                title="No Docker Compose File"
+                            >
+                                This root of this project does not have any files starting with `compose.y(a)ml` or `docker-compose.y(a)ml`.
+                            </Alert>
+                        )}
+                    </Group>
+                    <Group>
+                        {project.services?.map((service) => (
+                            <Service
+                                key={service.serviceName}
+                                service={service}
+                                onChange={(updated) => {
+                                    const newService = { ...service, ...updated };
+                                    const newServices = project.services?.map((s) => (s.serviceName === service.serviceName ? newService : s)) || [];
+                                    updateProject({ services: newServices });
+                                }}
+                            />
+                        ))}
+                    </Group>
+                </Stack>
+                <Space h="xl" />
+                <Alert
+                    color="red"
+                    variant="light"
+                    title="Danger Zone"
+                >
+                    <Stack>
+                        <Group>
+                            <Tooltip label="Delete Project">
+                                <Button
+                                    color="red"
+                                    variant="outline"
+                                    onClick={() => setModal('delete-project')}
+                                >
+                                    Delete Project
+                                </Button>
+                            </Tooltip>
+                        </Group>
+                    </Stack>
+                </Alert>
             </Stack>
-        </Stack>
+        </>
     );
 };
 

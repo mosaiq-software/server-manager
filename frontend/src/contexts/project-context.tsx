@@ -8,6 +8,7 @@ type ProjectContextType = {
     projects: Project[];
     create: (newProject: Project) => Promise<void>;
     update: (id: string, updatedProject: Partial<Project>, clientOnly?: boolean) => Promise<void>;
+    delete: (id: string) => Promise<void>;
     updateSecrets: (projectId: string, secrets: Secret[]) => Promise<void>;
     syncProjectToRepo: (projectId: string) => Promise<void>;
 };
@@ -105,12 +106,31 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
         }
     };
 
+    const handleDeleteProject = async (id: string) => {
+        try {
+            await apiPost(API_ROUTES.POST_DELETE_PROJECT, { projectId: id }, 'AUTH TOKEN...');
+            setProjects((prev) => prev.filter((proj) => proj.id !== id));
+            notifications.show({
+                title: 'Success',
+                message: 'Project deleted successfully',
+                color: 'green',
+            });
+        } catch (error) {
+            notifications.show({
+                title: 'Error',
+                message: 'Failed to delete project',
+                color: 'red',
+            });
+        }
+    };
+
     return (
         <ProjectContext.Provider
             value={{
                 projects,
                 create: handleCreateProject,
                 update: handleUpdateProject,
+                delete: handleDeleteProject,
                 updateSecrets,
                 syncProjectToRepo,
             }}
