@@ -65,3 +65,7 @@ export const updateProjectModelNoDirty = async (id: string, data: Partial<Projec
         { where: { id } }
     );
 };
+
+export const deleteProjectModel = async (id: string) => {
+    return await ProjectModel.destroy({ where: { id } });
+};

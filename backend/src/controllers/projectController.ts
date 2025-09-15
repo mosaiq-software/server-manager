@@ -1,8 +1,10 @@
-import { createProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
+import { createProjectModel, deleteProjectModel, getAllProjectsModel, getProjectByIdModel, ProjectModelType, updateProjectModelNoDirty } from '@/persistence/projectPersistence';
 import { DeploymentState, Project, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
 import { applyRepoData, getAllSecretsForProject } from './secretController';
 import { getRepoData } from '@/utils/repositoryUtils';
 import { getProjectInstancesByProjectIdModel } from '@/persistence/projectInstancePersistence';
+import { teardownProject } from './deployController';
+import { deleteProjectInstancesForProject } from './projectInstanceController';
 
 export const getProject = async (projectId: string) => {
     const projectData = await getProjectByIdModel(projectId);
@@ -132,8 +134,9 @@ export const generate32CharKey = (): string => {
 
 export const deleteProject = async (projectId: string): Promise<boolean> => {
     try {
-        // TODO handle teardown and cascading deletes
-        // await deleteProjectModel(projectId);
+        await teardownProject(projectId);
+        await deleteProjectInstancesForProject(projectId);
+        await deleteProjectModel(projectId);
         return true;
     } catch (error) {
         console.error('Error deleting project:', error);
