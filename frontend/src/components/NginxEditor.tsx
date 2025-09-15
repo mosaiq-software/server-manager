@@ -111,7 +111,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                 const duplicatePath = server.locations.map((loc) => loc.path).find((path, idx, arr) => arr.indexOf(path) !== idx);
                 return (
                     <Fieldset key={server.serverId}>
-                        <Title order={5}>{`Domain ${server.serverId}`}</Title>
+                        <Title order={5}>{`Domain ${server.serverId.split('-')[0]}`}</Title>
                         <Group
                             justify="space-between"
                             align="flex-end"
@@ -141,7 +141,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                     }}
                                 />
                             </Group>
-                            <Tooltip label={`Remove Domain ${server.serverId}`}>
+                            <Tooltip label={`Remove Domain ${server.serverId.split('-')[0]}`}>
                                 <ActionIcon
                                     onClick={() => handleRemoveServer(server.serverId)}
                                     variant="light"
@@ -171,7 +171,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                                 align="center"
                                             >
                                                 <Group>
-                                                    <Title order={5}>{`${server.serverId}.${location.locationId}`}</Title>
+                                                    <Title order={5}>{`${location.locationId.split('-')[0]}`}</Title>
                                                     <Badge
                                                         leftSection={MenuItems[location.type].icon({ size: 14 })}
                                                         variant="outline"
@@ -179,7 +179,7 @@ export const NginxEditor = (props: NginxEditorProps) => {
                                                         {MenuItems[location.type].title}
                                                     </Badge>
                                                 </Group>
-                                                <Tooltip label={`Remove ${MenuItems[location.type].title} ${server.serverId}.${location.locationId}`}>
+                                                <Tooltip label={`Remove ${MenuItems[location.type].title} ${location.locationId.split('-')[0]}`}>
                                                     <ActionIcon
                                                         onClick={() => handleRemoveLocation(server.serverId, location.locationId)}
                                                         variant="light"

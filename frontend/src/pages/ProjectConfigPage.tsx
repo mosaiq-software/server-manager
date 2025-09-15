@@ -467,7 +467,7 @@ const EnvVarRow = (props: EnvVarRowProps) => {
                     <TextInput
                         flex={1}
                         placeholder={secret.secretPlaceholder}
-                        value={secret.variable ? `Linked to ${secret.secretValue}` : secret.secretValue}
+                        value={secret.variable ? `Linked to ${parseDynamicVariablePath(secret.secretValue).serverId?.split('-')[0] ?? 'Project'} -> ${parseDynamicVariablePath(secret.secretValue).locationId?.split('-')[0] ?? 'Server'} -> ${parseDynamicVariablePath(secret.secretValue).field}` : secret.secretValue}
                         onChange={(event) => props.onChange({ ...secret, secretValue: event.currentTarget.value })}
                         disabled={secret.variable}
                     />
@@ -507,44 +507,52 @@ const EnvVarRow = (props: EnvVarRowProps) => {
                                         type="scroll"
                                         mah={400}
                                     >
-                                        {Object.entries(groupedVars).map(([parent, gr], i) => (
-                                            <Combobox.Group
-                                                key={parent}
-                                                label={
-                                                    <Group align="center">
-                                                        {gr.menuItem && <gr.menuItem.icon />}
-                                                        <Text fz="xs">{parent}</Text>
-                                                    </Group>
-                                                }
-                                            >
-                                                {gr.vars.map((varItem, i) => {
-                                                    const dynVar = parseDynamicVariablePath(varItem.path);
-                                                    return (
-                                                        <Combobox.Option
-                                                            key={varItem.path}
-                                                            value={varItem.path}
-                                                        >
-                                                            <Group gap={'xs'}>
-                                                                <Text
-                                                                    fz="sm"
-                                                                    fw={500}
-                                                                >
-                                                                    {varItem.path}
+                                        {Object.entries(groupedVars).map(([parent, gr], i) => {
+                                            const grParts = parent.split('.');
+                                            return (
+                                                <Combobox.Group
+                                                    key={parent}
+                                                    label={
+                                                        <Stack w="100%">
+                                                            {i !== 0 && <Divider my="xs" />}
+                                                            <Group align="center">
+                                                                {gr.menuItem && <gr.menuItem.icon />}
+                                                                <Text fz="xs">
+                                                                    {gr.menuItem?.title} {grParts[grParts.length - 1].split('-')[0]}
                                                                 </Text>
-                                                                {!!varItem.placeholder?.length && (
-                                                                    <Text
-                                                                        fz="xs"
-                                                                        c="dimmed"
-                                                                    >
-                                                                        {varItem.placeholder}
-                                                                    </Text>
-                                                                )}
                                                             </Group>
-                                                        </Combobox.Option>
-                                                    );
-                                                })}
-                                            </Combobox.Group>
-                                        ))}
+                                                        </Stack>
+                                                    }
+                                                >
+                                                    {gr.vars.map((varItem, i) => {
+                                                        const dynVar = parseDynamicVariablePath(varItem.path);
+                                                        return (
+                                                            <Combobox.Option
+                                                                key={varItem.path}
+                                                                value={varItem.path}
+                                                            >
+                                                                <Group gap={'xs'}>
+                                                                    <Text
+                                                                        fz="sm"
+                                                                        fw={500}
+                                                                    >
+                                                                        {`${dynVar.locationId ? `${dynVar.locationId.split('-')[0]}'s ` : ''}${dynVar.field}`}
+                                                                    </Text>
+                                                                    {!!varItem.placeholder?.length && (
+                                                                        <Text
+                                                                            fz="xs"
+                                                                            c="dimmed"
+                                                                        >
+                                                                            {varItem.placeholder}
+                                                                        </Text>
+                                                                    )}
+                                                                </Group>
+                                                            </Combobox.Option>
+                                                        );
+                                                    })}
+                                                </Combobox.Group>
+                                            );
+                                        })}
                                     </ScrollArea.Autosize>
                                 </Combobox.Options>
                             </Combobox.Dropdown>

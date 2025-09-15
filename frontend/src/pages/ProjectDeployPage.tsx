@@ -1,7 +1,7 @@
-import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title, Code, Tooltip, Alert } from '@mantine/core';
+import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title, Code, Tooltip, Alert, Fieldset } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { DeploymentState, Project, ProjectInstance, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
+import { DeploymentState, DockerStatus, Project, ProjectInstance, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '@/utils/api';
@@ -90,7 +90,7 @@ const ProjectDeployPage = () => {
         // TODO handle tearing down a project
     };
 
-    const canDeploy = project.hasDockerCompose && workerCtx.controlPlaneWorkerExists && project.state !== DeploymentState.DEPLOYING && project.state !== DeploymentState.DESTROYING;
+    const canDeploy = project.hasDockerCompose && workerCtx.controlPlaneWorker && project.state !== DeploymentState.DEPLOYING && project.state !== DeploymentState.DESTROYING;
 
     return (
         <Stack>
@@ -219,7 +219,7 @@ const ProjectDeployPage = () => {
                     This project does not have a Docker Compose file configured.
                 </Alert>
             )}
-            {!workerCtx.controlPlaneWorkerExists && (
+            {!workerCtx.controlPlaneWorker && (
                 <Alert
                     color="red"
                     variant="filled"
@@ -307,6 +307,17 @@ const ProjectDeployPage = () => {
                             />
                         )
                 )}
+                <ProjectInstanceItem
+                    header={{
+                        id: 'dummy_id_2',
+                        projectId: 'dummy_project_id',
+                        workerNodeId: 'dummy_worker_node_id',
+                        state: DeploymentState.FAILED,
+                        created: Date.now() - 1000000,
+                        lastUpdated: Date.now() - 500000,
+                        active: false,
+                    }}
+                />
             </Accordion>
         </Stack>
     );
@@ -316,48 +327,105 @@ interface ProjectInstanceItemProps {
     header: ProjectInstanceHeader;
 }
 const ProjectInstanceItem = (props: ProjectInstanceItemProps) => {
-    const [text, setText] = useState((props.header as any).log ?? '');
-    const handleGetText = async (force?: boolean) => {
-        if ((text && !force) || text === 'Fetching log...') return; // Already fetched
+    const [status, setStatus] = useState<string>('');
+    const [instance, setInstance] = useState<ProjectInstance | null>(null);
 
-        setText('Fetching log...');
+    const handleGetProjectInstance = useThrottledCallback(async () => {
+        setStatus('loading');
         try {
-            await new Promise((resolve) => setTimeout(resolve, 500));
             const instance = await apiGet(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: props.header.id }, 'AUTH TOKEN...');
             if (!instance?.deploymentLog) {
-                setText('Failed to find log..');
+                setStatus('error');
                 return;
             }
-            const logText = instance.deploymentLog.replace('\r\n', '\n');
-            setText(logText);
+            setStatus('success');
+            setInstance(instance);
         } catch (error) {
-            setText('Failed to fetch log..');
+            setStatus('error');
+            setInstance(null);
         }
-    };
+        // setInstance({
+        //     id: 'dummy id',
+        //     projectId: 'dummy projectId',
+        //     workerNodeId: 'dummy workerNodeId',
+        //     state: DeploymentState.DEPLOYED,
+        //     created: Date.now(),
+        //     lastUpdated: Date.now(),
+        //     active: false,
+        //     deploymentLog: 'Dummy log\nLine 2 of dummy log\nLine 3 of dummy log',
+        //     services: [
+        //         {
+        //             serviceName: 'dummy_service',
+        //             expectedContainerState: DockerStatus.RUNNING,
+        //             collectContainerLogs: true,
+        //             instanceId: 'dummy_instance_id',
+        //             projectInstanceId: 'dummy_project_instance_id',
+        //             containerId: 'dummy_container_id',
+        //             actualContainerState: DockerStatus.RUNNING,
+        //             containerLogs: 'Dummy container log\nLine 2 of dummy container log',
+        //             created: Date.now(),
+        //             lastUpdated: Date.now(),
+        //         },
+        //     ],
+        // });
+    }, 1000);
+
+    useEffect(() => {
+        handleGetProjectInstance();
+    }, []);
 
     const date = new Date(props.header.created).toLocaleString();
 
     return (
-        <Accordion.Item
-            value={props.header.id}
-            onClick={() => handleGetText()}
-        >
-            <Accordion.Control>
-                <Group justify="space-between">
-                    <Text>{date}</Text>
-                    <Text>({props.header.state})</Text>
-                </Group>
-            </Accordion.Control>
-            <Accordion.Panel>
+        <Stack>
+            <Group>
+                <Text>{date}</Text>
                 <ActionIcon
                     size="xs"
-                    onClick={() => handleGetText(true)}
+                    onClick={handleGetProjectInstance}
                 >
                     <MdOutlineRefresh />
                 </ActionIcon>
-                <Code block>{text}</Code>
-            </Accordion.Panel>
-        </Accordion.Item>
+            </Group>
+            <Stack>
+                <Text>Services</Text>
+                {instance?.services.map((service) => {
+                    return (
+                        <Fieldset
+                            legend={service.serviceName}
+                            key={service.serviceName}
+                            style={{
+                                width: '100%',
+                            }}
+                        >
+                            <Stack gap={0}>
+                                <Text
+                                    fz={'.75rem'}
+                                    c="dimmed"
+                                >
+                                    Expected {service.expectedContainerState}
+                                </Text>
+                                <Text>
+                                    {service.actualContainerState} as of {new Date(service.lastUpdated).toLocaleString()}
+                                </Text>
+                            </Stack>
+                            <Text>{service.collectContainerLogs ? 'Collecting logs' : 'Not collecting logs'}</Text>
+                            <Code block>{service.containerLogs}</Code>
+                        </Fieldset>
+                    );
+                })}
+            </Stack>
+            <Accordion.Item value={props.header.id}>
+                <Accordion.Control>
+                    <Group justify="space-between">
+                        <Text>({props.header.state})</Text>
+                    </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                    <Code block>{instance?.deploymentLog.replace('\r\n', '\n')}</Code>
+                </Accordion.Panel>
+            </Accordion.Item>
+        </Stack>
     );
 };
 
