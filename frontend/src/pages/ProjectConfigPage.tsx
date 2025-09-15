@@ -1,4 +1,4 @@
-import { ActionIcon, ActionIconGroup, Alert, Button, Center, Code, Combobox, CopyButton, Divider, Fieldset, Grid, Group, HoverCard, List, Loader, Menu, Modal, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
+import { ActionIcon, ActionIconGroup, Alert, Button, Center, Code, Combobox, CopyButton, Divider, Fieldset, Grid, Group, HoverCard, List, Loader, Menu, Modal, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, Textarea, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { DeploymentState, DockerStatus, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, ProjectService, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
@@ -8,10 +8,10 @@ import { apiGet, apiPost } from '@/utils/api';
 import { EditableTextInput } from '@/components/EditableTextInput';
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
-import { assembleDotenv, extractVariables, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
+import { assembleDotenv, extractVariables, parseDotenv, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
-import { MdOutlineCode, MdOutlineDns, MdOutlineInfo, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineWeb } from 'react-icons/md';
+import { MdOutlineCode, MdOutlineDns, MdOutlineDownload, MdOutlineInfo, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineUpload, MdOutlineWeb } from 'react-icons/md';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -23,7 +23,8 @@ const ProjectConfigPage = () => {
     const [secrets, setSecrets] = useState<Secret[]>([]);
     const [dynamicEnvVariables, setDynamicEnvVariables] = useState<DynamicEnvVariable[]>([]);
     const [syncing, setSyncing] = useState(false);
-    const [modal, setModal] = useState<'delete-project' | null>(null);
+    const [modal, setModal] = useState<'delete-project' | 'import-dotenv' | null>(null);
+    const [importingDotenv, setImportingDotenv] = useState('');
 
     const varCombobox = useCombobox({
         onDropdownClose: () => varCombobox.resetSelectedOption(),
@@ -48,6 +49,11 @@ const ProjectConfigPage = () => {
     };
 
     const updateSecret = (secret: Secret) => {
+        const existing = secrets.find((s) => s.secretName === secret.secretName);
+        console.log('Updating secret', secret, existing);
+        if (!existing) {
+            return;
+        }
         setSecrets((prev) => prev.map((s) => (s.secretName === secret.secretName ? secret : s)));
     };
 
@@ -102,6 +108,56 @@ const ProjectConfigPage = () => {
                 color: 'red',
             });
         }
+    };
+
+    const handleImportDotenv = () => {
+        setImportingDotenv('');
+        setModal(null);
+        if (!project) return;
+        const lines = importingDotenv.split('\n');
+        for (const _line of lines) {
+            const line = _line.split('#')[0].trim();
+            if (!line.length) continue;
+            const [key, ...rest] = line.split('=');
+            if (!key?.length) continue;
+            if (key?.trim().length) {
+                const value = rest.join('=');
+                const secretKey = key.trim();
+                const existing = secrets.find((s) => s.secretName === secretKey);
+                if (existing) {
+                    setSecrets((prev) => {
+                        return prev.map((s) => {
+                            return {
+                                ...s,
+                                secretValue: s.secretName === secretKey ? value : s.secretValue,
+                            };
+                        });
+                    });
+                }
+            }
+        }
+        notifications.show({
+            title: 'Success',
+            message: 'Env file imported successfully',
+            color: 'green',
+        });
+    };
+
+    const handleExportDotenv = () => {
+        if (!project) return;
+        const dotenvContent = assembleDotenv(secrets);
+        const blob = new Blob([dotenvContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${project.id}.env`;
+        link.click();
+        URL.revokeObjectURL(url);
+        notifications.show({
+            title: 'Success',
+            message: 'Env file exported successfully',
+            color: 'green',
+        });
     };
 
     if (project === undefined) {
@@ -162,6 +218,40 @@ const ProjectConfigPage = () => {
                             onClick={handleDeleteProject}
                         >
                             Delete Project
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+            <Modal
+                opened={modal === 'import-dotenv'}
+                onClose={() => setModal(null)}
+                withCloseButton={false}
+            >
+                <Stack>
+                    <Title order={3}>Import .env file</Title>
+                    <Textarea
+                        title=".env File Content"
+                        placeholder="Paste your .env content here"
+                        minRows={6}
+                        autosize
+                        value={importingDotenv}
+                        onChange={(e) => setImportingDotenv(e.currentTarget.value)}
+                    />
+                    <Group>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setImportingDotenv('');
+                                setModal(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="filled"
+                            onClick={handleImportDotenv}
+                        >
+                            Import
                         </Button>
                     </Group>
                 </Stack>
@@ -293,48 +383,10 @@ const ProjectConfigPage = () => {
                 />
                 <Divider my="sm" />
                 <Group
-                    align="flex-start"
+                    align="center"
                     justify="flex-start"
                 >
-                    <Stack>
-                        <Title order={4}>System Configuration</Title>
-                        <Text
-                            fz=".75rem"
-                            c="dimmed"
-                        >
-                            Pulled from the repository.
-                            <HoverCard
-                                position="right"
-                                withArrow
-                            >
-                                <HoverCard.Target>
-                                    <ActionIcon
-                                        variant="subtle"
-                                        size="xs"
-                                    >
-                                        <MdOutlineInfo />
-                                    </ActionIcon>
-                                </HoverCard.Target>
-                                <HoverCard.Dropdown>
-                                    <Text fz="xs">Environment variable are searched for in order of:</Text>
-                                    <List fz="xs">
-                                        <List.Item>
-                                            Vars in any file beginning with<Code>.env</Code> (e.g. <Code>.env, .env.sample, .env.production</Code>)
-                                        </List.Item>
-                                        <List.Item>
-                                            Any text matching <Code>{'${VAR_NAME}'}</Code> in a Docker Compose file (<Code>docker-compose.y(a)ml</Code> or <Code>compose.y(a)ml</Code>)
-                                        </List.Item>
-                                        <List.Item>
-                                            Any text matching <Code>{'process.env.VAR_NAME'}</Code> in a Javascript or Typescript file (<Code>js, ts, cjs, cts, mjs, mts, jsx, tsx</Code>)
-                                            <List.Item>
-                                                Note: Only variables in the form of <Code>process.env.VAR_NAME</Code> are detected. More complex usages (e.g. <Code>{`process.env['VAR_NAME']`}</Code>) are not detected.
-                                            </List.Item>
-                                        </List.Item>
-                                    </List>
-                                </HoverCard.Dropdown>
-                            </HoverCard>
-                        </Text>
-                    </Stack>
+                    <Title order={4}>System Configuration</Title>
                     <Tooltip label="Sync to Repo">
                         <ActionIcon
                             variant="light"
@@ -345,8 +397,66 @@ const ProjectConfigPage = () => {
                         </ActionIcon>
                     </Tooltip>
                 </Group>
+                <Group align="center">
+                    <Text
+                        fz=".75rem"
+                        c="dimmed"
+                    >
+                        Pulled from the repository.
+                    </Text>
+                    <HoverCard
+                        position="right"
+                        withArrow
+                    >
+                        <HoverCard.Target>
+                            <ActionIcon
+                                variant="subtle"
+                                size="xs"
+                            >
+                                <MdOutlineInfo />
+                            </ActionIcon>
+                        </HoverCard.Target>
+                        <HoverCard.Dropdown>
+                            <Text fz="xs">Environment variable are searched for in order of:</Text>
+                            <List fz="xs">
+                                <List.Item>
+                                    Vars in any file beginning with<Code>.env</Code> (e.g. <Code>.env, .env.sample, .env.production</Code>)
+                                </List.Item>
+                                <List.Item>
+                                    Any text matching <Code>{'${VAR_NAME}'}</Code> in a Docker Compose file (<Code>docker-compose.y(a)ml</Code> or <Code>compose.y(a)ml</Code>)
+                                </List.Item>
+                                <List.Item>
+                                    Any text matching <Code>{'process.env.VAR_NAME'}</Code> in a Javascript or Typescript file (<Code>js, ts, cjs, cts, mjs, mts, jsx, tsx</Code>)
+                                    <List.Item>
+                                        Note: Only variables in the form of <Code>process.env.VAR_NAME</Code> are detected. More complex usages (e.g. <Code>{`process.env['VAR_NAME']`}</Code>) are not detected.
+                                    </List.Item>
+                                </List.Item>
+                            </List>
+                        </HoverCard.Dropdown>
+                    </HoverCard>
+                </Group>
                 <Stack gap="xs">
-                    <Title order={5}>Environment Variables</Title>
+                    <Group align="center">
+                        <Title order={5}>Environment Variables</Title>
+                        <Tooltip label="Import .env File">
+                            <ActionIcon
+                                variant="light"
+                                onClick={() => {
+                                    setModal('import-dotenv');
+                                }}
+                            >
+                                <MdOutlineUpload />
+                            </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Export .env File">
+                            <ActionIcon
+                                variant="light"
+                                onClick={handleExportDotenv}
+                            >
+                                <MdOutlineDownload />
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
                     {project.hasDotenv ? (
                         <Grid w="70%">
                             <Grid.Col span={3}>
