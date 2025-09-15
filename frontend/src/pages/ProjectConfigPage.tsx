@@ -12,6 +12,7 @@ import { assembleDotenv, extractVariables, parseDotenv, parseDynamicVariablePath
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
 import { MdOutlineCode, MdOutlineDns, MdOutlineDownload, MdOutlineInfo, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineUpload, MdOutlineWeb } from 'react-icons/md';
+import { useWindowEvent } from '@mantine/hooks';
 
 const ProjectConfigPage = () => {
     const params = useParams();
@@ -26,8 +27,14 @@ const ProjectConfigPage = () => {
     const [modal, setModal] = useState<'delete-project' | 'import-dotenv' | null>(null);
     const [importingDotenv, setImportingDotenv] = useState('');
 
-    const varCombobox = useCombobox({
-        onDropdownClose: () => varCombobox.resetSelectedOption(),
+    useWindowEvent('keydown', (event) => {
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!same()) {
+                saveChanges();
+            }
+        }
     });
 
     useEffect(() => {
@@ -67,6 +74,10 @@ const ProjectConfigPage = () => {
 
     const saveChanges = async () => {
         if (!project) return;
+        notifications.show({
+            title: 'Saving Changes',
+            message: 'Saving your changes...',
+        });
         try {
             await projectCtx.update(project.id, project);
             await projectCtx.updateSecrets(project.id, secrets);
@@ -278,13 +289,15 @@ const ProjectConfigPage = () => {
                     >
                         <Group>
                             <Text>You have unsaved changes. Please save your changes before leaving this page.</Text>
-                            <Button
-                                variant="light"
-                                color="blue"
-                                onClick={saveChanges}
-                            >
-                                Save Changes
-                            </Button>
+                            <Tooltip label="Save Changes (Ctrl+S)">
+                                <Button
+                                    variant="light"
+                                    color="blue"
+                                    onClick={saveChanges}
+                                >
+                                    Save Changes
+                                </Button>
+                            </Tooltip>
                         </Group>
                     </Alert>
                 )}
