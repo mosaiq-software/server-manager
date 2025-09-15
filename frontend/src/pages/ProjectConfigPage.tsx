@@ -1,17 +1,14 @@
-import { ActionIcon, ActionIconGroup, Alert, Button, Center, Code, Combobox, CopyButton, Divider, Fieldset, Grid, Group, HoverCard, List, Loader, Menu, Modal, MultiSelect, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, Textarea, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
+import { ActionIcon, ActionIconGroup, Alert, Button, Center, Code, Combobox, Divider, Fieldset, Grid, Group, HoverCard, List, Loader, Modal, NumberInput, ScrollArea, Select, Space, Stack, Switch, Table, Text, Textarea, TextInput, Title, Tooltip, useCombobox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { DeploymentState, DockerStatus, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectNginxConfig, ProjectService, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
+import { DockerStatus, DynamicEnvVariable, NginxConfigLocationType, Project, ProjectService, Secret, UpperDynamicEnvVariableType } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { apiGet, apiPost } from '@/utils/api';
-import { EditableTextInput } from '@/components/EditableTextInput';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
-import { assembleDotenv, extractVariables, parseDotenv, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
+import { assembleDotenv, extractVariables, parseDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { NginxEditor } from '@/components/NginxEditor';
 import { useWorkers } from '@/contexts/worker-context';
-import { MdOutlineCode, MdOutlineDns, MdOutlineDownload, MdOutlineInfo, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineStorage, MdOutlineUmbrella, MdOutlineUpload, MdOutlineWeb } from 'react-icons/md';
+import { MdOutlineCode, MdOutlineDns, MdOutlineDownload, MdOutlineInfo, MdOutlineLan, MdOutlineLaunch, MdOutlineLink, MdOutlineLinkOff, MdOutlineRefresh, MdOutlineUmbrella, MdOutlineUpload, MdOutlineWeb } from 'react-icons/md';
 import { useWindowEvent } from '@mantine/hooks';
 
 const ProjectConfigPage = () => {
