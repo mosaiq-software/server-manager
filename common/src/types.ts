@@ -218,3 +218,14 @@ export interface DockerContainerData {
     State: string;
     Status: string;
 }
+
+export interface ControlPlaneStatus {
+    lastHeartbeat: number;
+    containerLog: string;
+    incidents: ControlPlaneIncident[];
+}
+export interface ControlPlaneIncident {
+    id: string;
+    from: number;
+    to: number;
+}

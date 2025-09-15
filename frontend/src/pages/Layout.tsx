@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDisclosure } from '@mantine/hooks';
-import { AppShell, Avatar, Burger, Button, Center, Divider, Group, Loader, Modal, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
+import { AppShell, Avatar, Burger, Button, Center, Divider, Group, Loader, Modal, Space, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
 import RouterLink from '@/components/RouterLink';
 import { useProjects } from '@/contexts/project-context';
 import { Link, useNavigate } from 'react-router';
@@ -141,6 +141,10 @@ const Layout = (props: { children: React.ReactNode }) => {
                         label="Workers"
                         showActive
                     />
+                    <RouterLink
+                        to="/control-plane"
+                        label="Control Plane"
+                    />
                     <Divider
                         w="80%"
                         mx="auto"
@@ -170,6 +174,7 @@ const Layout = (props: { children: React.ReactNode }) => {
                             />
                         </RouterLink>
                     ))}
+                    <Space h="md" />
                     <Button
                         onClick={() => setModal('create')}
                         variant="outline"

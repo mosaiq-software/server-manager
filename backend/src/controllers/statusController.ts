@@ -1,7 +1,7 @@
 import { getProject } from './projectController';
 import { getAllProjectsModel } from '@/persistence/projectPersistence';
 import { getAllWorkerNodes, logWorkerNodeStatus } from './workerNodeController';
-import { DockerContainerData, DockerStatus, WorkerNode, WorkerStatus } from '@mosaiq/nsm-common/types';
+import { ControlPlaneStatus, DockerContainerData, DockerStatus, WorkerNode, WorkerStatus } from '@mosaiq/nsm-common/types';
 import { workerNodePost } from '@/utils/workerAPI';
 import { WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { createStatusModel, getStatusByServiceInstanceIdModel, StatusModelType } from '@/persistence/serviceStatusPersistence';
@@ -9,6 +9,11 @@ import { getAllActiveProjectInstancesModel } from '@/persistence/projectInstance
 import { getAllActiveServices } from './projectInstanceController';
 import { NSM_LABEL_SERVICE_INSTANCE_ID } from './deployController';
 import { getServiceInstanceByIdModel, updateServiceInstanceModel } from '@/persistence/serviceInstancePersistence';
+import { getLastCpHeartbeatModel, updateCpHeartbeatModel } from '@/persistence/controlPlaneHeartbeatPersistence';
+import { createControlPlaneStatusModelLog, getAllControlPlaneStatusesModel } from '@/persistence/controlPlaneStatusPersistence';
+
+export const CONTROL_PLANE_HEARTBEAT_INTERVAL_MINS = 1;
+const CONTROL_PLANE_HEARTBEAT_TOLERANCE_MINS = 0.5;
 
 export const getStatusForProject = async (projectId: string) => {
     const statuses = await getStatusByServiceInstanceIdModel(projectId);
@@ -65,6 +70,38 @@ const logServiceStatus = async (containerData: DockerContainerData, serviceInsta
         created: Date.now(),
     };
     await createStatusModel(statusType);
+};
+
+export const handleControlPlaneHeartbeat = async () => {
+    const heartbeatMs = CONTROL_PLANE_HEARTBEAT_INTERVAL_MINS * 60 * 1000;
+    const heartbeatToleranceMs = CONTROL_PLANE_HEARTBEAT_TOLERANCE_MINS * 60 * 1000;
+    try {
+        const lastSeen = await getLastCpHeartbeatModel();
+        const now = Date.now();
+        if (lastSeen) {
+            const lastExpected = now - heartbeatMs;
+            const lastExpectedMin = lastExpected - heartbeatToleranceMs;
+            const lastExpectedMax = lastExpected + heartbeatToleranceMs;
+            if (lastSeen < lastExpectedMin || lastSeen > lastExpectedMax) {
+                console.warn(`Control plane heartbeat missed. Expected around ${new Date(lastExpected).toISOString()}, last seen at ${new Date(lastSeen).toISOString()}`);
+                await createControlPlaneStatusModelLog(lastSeen, now); // log the outage
+            }
+        }
+        await updateCpHeartbeatModel();
+    } catch (error) {
+        console.error('Error handling control plane heartbeat:', error);
+    }
+};
+
+export const getControlPlaneStatus = async () => {
+    const lastSeen = await getLastCpHeartbeatModel();
+    const incidents = await getAllControlPlaneStatusesModel();
+    const status: ControlPlaneStatus = {
+        lastHeartbeat: lastSeen || 0,
+        containerLog: '',
+        incidents,
+    };
+    return status;
 };
 
 const getUriHealth = async (uri: string) => {

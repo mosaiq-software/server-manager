@@ -1,4 +1,5 @@
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
+const TIMEOUT_MS = 10000;
 export async function apiGet<T extends API_ROUTES>(route: T, params: API_PARAMS[T], authToken?: string): Promise<API_RETURN[T] | undefined> {
     try {
         const loadedURL = loadParams(route, params);
@@ -9,6 +10,7 @@ export async function apiGet<T extends API_ROUTES>(route: T, params: API_PARAMS[
                       Authorization: `Bearer ${authToken}`,
                   }
                 : undefined,
+            signal: AbortSignal.timeout(TIMEOUT_MS),
         });
         const data = (await response.json()) as API_RETURN[T] | undefined;
         return data;
@@ -28,6 +30,7 @@ export async function apiPost<T extends API_ROUTES>(route: T, params: API_PARAMS
                 'Content-Type': 'application/json',
             },
             body: body ? JSON.stringify(body) : '{}',
+            signal: AbortSignal.timeout(TIMEOUT_MS),
         });
         const data = (await response.json()) as API_RETURN[T] | undefined;
         return data;

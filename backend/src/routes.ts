@@ -7,7 +7,7 @@ import { updateEnvironmentVariable } from '@/controllers/secretController';
 import { createWorkerNode, deleteWorkerNode, getAllWorkerNodes, regenerateWorkerNodeKey, updateWorkerNode } from './controllers/workerNodeController';
 import { getProjectInstanceByIdModel } from './persistence/projectInstancePersistence';
 import { getProjectInstance } from './controllers/projectInstanceController';
-import { logContainerStatusesForAllWorkers } from './controllers/statusController';
+import { getControlPlaneStatus, logContainerStatusesForAllWorkers } from './controllers/statusController';
 
 const router = express.Router();
 
@@ -137,6 +137,17 @@ router.get(API_ROUTES.GET_WORKER_STATUSES, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting worker statuses', e);
+        res.status(500).send();
+    }
+});
+
+router.get(API_ROUTES.GET_CONTROL_PLANE_STATUS, async (req, res) => {
+    try {
+        const controlPlaneStatus = await getControlPlaneStatus();
+        const response: API_RETURN[API_ROUTES.GET_CONTROL_PLANE_STATUS] = controlPlaneStatus;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error getting control plane status', e);
         res.status(500).send();
     }
 });

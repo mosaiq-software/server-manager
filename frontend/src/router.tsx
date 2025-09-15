@@ -5,6 +5,7 @@ import ProjectDeployPage from '@/pages/ProjectDeployPage';
 import ProjectConfigPage from '@/pages/ProjectConfigPage';
 import ProjectLogsPage from '@/pages/ProjectLogsPage';
 import WorkersPage from '@/pages/WorkersPage';
+import ControlPlaneStatusPage from '@/pages/ControlPlaneStatusPage';
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 
@@ -35,6 +36,10 @@ const Router = () => {
                 <Route
                     path="/workers"
                     element={<WorkersPage />}
+                />
+                <Route
+                    path="/control-plane"
+                    element={<ControlPlaneStatusPage />}
                 />
                 <Route
                     path="/*"

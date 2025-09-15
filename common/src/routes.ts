@@ -1,4 +1,4 @@
-import { DeploymentLogUpdate, DeploymentState, Project, ProjectInstance, Secret, WorkerNode } from './types';
+import { ControlPlaneStatus, DeploymentLogUpdate, DeploymentState, Project, ProjectInstance, Secret, WorkerNode } from './types';
 
 // ===== ROUTES =====
 export enum API_ROUTES {
@@ -10,6 +10,7 @@ export enum API_ROUTES {
     GET_PROJECT_INSTANCE = '/project-instance/:projectInstanceId',
     GET_WORKER_NODES = '/worker-nodes',
     GET_WORKER_STATUSES = '/worker-nodes/status',
+    GET_CONTROL_PLANE_STATUS = '/control-plane/status',
 
     //POST
     POST_CREATE_PROJECT = '/project/create',
@@ -33,6 +34,7 @@ export interface API_PARAMS {
     [API_ROUTES.GET_PROJECT_INSTANCE]: { projectInstanceId: string };
     [API_ROUTES.GET_WORKER_NODES]: {};
     [API_ROUTES.GET_WORKER_STATUSES]: {};
+    [API_ROUTES.GET_CONTROL_PLANE_STATUS]: {};
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: {};
@@ -57,6 +59,7 @@ export interface API_BODY {
     [API_ROUTES.GET_PROJECT_INSTANCE]: undefined;
     [API_ROUTES.GET_WORKER_NODES]: undefined;
     [API_ROUTES.GET_WORKER_STATUSES]: undefined;
+    [API_ROUTES.GET_CONTROL_PLANE_STATUS]: undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
@@ -80,6 +83,7 @@ export interface API_RETURN {
     [API_ROUTES.GET_PROJECT_INSTANCE]: ProjectInstance | undefined;
     [API_ROUTES.GET_WORKER_NODES]: WorkerNode[] | undefined;
     [API_ROUTES.GET_WORKER_STATUSES]: undefined; //TODO
+    [API_ROUTES.GET_CONTROL_PLANE_STATUS]: ControlPlaneStatus | undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
@@ -105,6 +109,7 @@ export interface API_AUTH {
     [API_ROUTES.GET_PROJECT_INSTANCE]: string;
     [API_ROUTES.GET_WORKER_NODES]: string;
     [API_ROUTES.GET_WORKER_STATUSES]: string;
+    [API_ROUTES.GET_CONTROL_PLANE_STATUS]: string;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: string;
