@@ -153,7 +153,7 @@ const Layout = (props: { children: React.ReactNode }) => {
                     {projectCtx.projects.map((project) => (
                         <RouterLink
                             to={`/p/${project.id}`}
-                            label={`${project.id} (${project.state})`}
+                            label={`${project.id}`}
                             key={project.id}
                             showActive
                         >

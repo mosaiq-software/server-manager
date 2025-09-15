@@ -11,6 +11,7 @@ import { ProjectHeader } from '@/components/ProjectHeader';
 import { MdOutlineCheckBox, MdOutlineDelete, MdOutlineFileCopy, MdOutlineInsertLink, MdOutlineKey, MdOutlineLaunch, MdOutlineRefresh, MdOutlineRocket, MdOutlineRocketLaunch } from 'react-icons/md';
 import { useThrottledCallback } from '@mantine/hooks';
 import { useWorkers } from '@/contexts/worker-context';
+import { ConsoleLog } from '@/components/ConsoleLog';
 
 const ProjectDeployPage = () => {
     const params = useParams();
@@ -20,7 +21,7 @@ const ProjectDeployPage = () => {
     const workerCtx = useWorkers();
     const [project, setProject] = useState<Project | undefined | null>(undefined);
     const [modal, setModal] = useState<'reset-key' | 'deploy' | 'teardown' | null>(null);
-    const [openDeploymentLog, setOpenDeploymentLog] = useState<string | null>(null);
+    const [openProjectInstance, setOpenProjectInstance] = useState<string | null>(null);
     const [currentProjectInstanceId, setCurrentProjectInstanceId] = useState<string | undefined>(undefined);
     const [currentProjectInstance, setCurrentProjectInstance] = useState<ProjectInstance | undefined>(undefined);
 
@@ -68,7 +69,7 @@ const ProjectDeployPage = () => {
         if (!newLogId) {
             notifications.show({ message: 'Failed to get deployment log ID. Reload to see log', color: 'yellow' });
         } else {
-            setOpenDeploymentLog(newLogId);
+            setOpenProjectInstance(newLogId);
             setCurrentProjectInstanceId(newLogId);
         }
         projectCtx.update(project.id, { dirtyConfig: false }, true);
@@ -293,10 +294,10 @@ const ProjectDeployPage = () => {
                 </Button>
             </Group>
             <Divider />
-            <Title order={5}>Deployment Logs</Title>
+            <Title order={5}>Deployment Instances</Title>
             <Accordion
-                value={openDeploymentLog}
-                onChange={setOpenDeploymentLog}
+                value={openProjectInstance}
+                onChange={setOpenProjectInstance}
             >
                 {[currentProjectInstance, ...(project.instances ?? [])].map(
                     (instance) =>
@@ -327,105 +328,115 @@ interface ProjectInstanceItemProps {
     header: ProjectInstanceHeader;
 }
 const ProjectInstanceItem = (props: ProjectInstanceItemProps) => {
-    const [status, setStatus] = useState<string>('');
     const [instance, setInstance] = useState<ProjectInstance | null>(null);
 
-    const handleGetProjectInstance = useThrottledCallback(async () => {
-        setStatus('loading');
-        try {
-            const instance = await apiGet(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: props.header.id }, 'AUTH TOKEN...');
-            if (!instance?.deploymentLog) {
-                setStatus('error');
-                return;
-            }
-            setStatus('success');
-            setInstance(instance);
-        } catch (error) {
-            setStatus('error');
-            setInstance(null);
-        }
-        // setInstance({
-        //     id: 'dummy id',
-        //     projectId: 'dummy projectId',
-        //     workerNodeId: 'dummy workerNodeId',
-        //     state: DeploymentState.DEPLOYED,
-        //     created: Date.now(),
-        //     lastUpdated: Date.now(),
-        //     active: false,
-        //     deploymentLog: 'Dummy log\nLine 2 of dummy log\nLine 3 of dummy log',
-        //     services: [
-        //         {
-        //             serviceName: 'dummy_service',
-        //             expectedContainerState: DockerStatus.RUNNING,
-        //             collectContainerLogs: true,
-        //             instanceId: 'dummy_instance_id',
-        //             projectInstanceId: 'dummy_project_instance_id',
-        //             containerId: 'dummy_container_id',
-        //             actualContainerState: DockerStatus.RUNNING,
-        //             containerLogs: 'Dummy container log\nLine 2 of dummy container log',
-        //             created: Date.now(),
-        //             lastUpdated: Date.now(),
-        //         },
-        //     ],
-        // });
-    }, 1000);
+    const handleGetProjectInstance = async () => {
+        // setStatus('loading');
+        // try {
+        //     const instance = await apiGet(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: props.header.id }, 'AUTH TOKEN...');
+        //     if (!instance?.deploymentLog) {
+        //         setStatus('error');
+        //         return;
+        //     }
+        //     setStatus('success');
+        //     setInstance(instance);
+        // } catch (error) {
+        //     setStatus('error');
+        //     setInstance(null);
+        // }
+        setInstance({
+            id: 'dummy id',
+            projectId: 'dummy projectId',
+            workerNodeId: 'dummy workerNodeId',
+            state: DeploymentState.DEPLOYED,
+            created: Date.now(),
+            lastUpdated: Date.now(),
+            active: false,
+            deploymentLog: 'Dummy log\nLine 2 of dummy log\nLine 3 of dummy log',
+            services: [
+                {
+                    serviceName: 'dummy_service',
+                    expectedContainerState: DockerStatus.RUNNING,
+                    collectContainerLogs: true,
+                    instanceId: 'dummy_instance_id',
+                    projectInstanceId: 'dummy_project_instance_id',
+                    containerId: 'dummy_container_id',
+                    actualContainerState: DockerStatus.RUNNING,
+                    containerLogs: 'Dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log',
+                    created: Date.now(),
+                    lastUpdated: Date.now(),
+                },
+            ],
+        });
+    };
 
-    useEffect(() => {
-        handleGetProjectInstance();
-    }, []);
-
-    const date = new Date(props.header.created).toLocaleString();
+    const date = new Date(instance?.created ?? props.header.created).toLocaleString();
 
     return (
-        <Stack>
-            <Group>
-                <Text>{date}</Text>
-                <ActionIcon
-                    size="xs"
-                    onClick={handleGetProjectInstance}
-                >
-                    <MdOutlineRefresh />
-                </ActionIcon>
-            </Group>
-            <Stack>
-                <Text>Services</Text>
-                {instance?.services.map((service) => {
-                    return (
-                        <Fieldset
-                            legend={service.serviceName}
-                            key={service.serviceName}
-                            style={{
-                                width: '100%',
-                            }}
+        <Accordion.Item value={props.header.id}>
+            <Accordion.Control
+                onClick={() => {
+                    handleGetProjectInstance();
+                }}
+            >
+                <Group justify="space-between">
+                    <Text>{date}</Text>
+                    <Text>({instance?.state ?? props.header.state})</Text>
+                </Group>
+            </Accordion.Control>
+
+            <Accordion.Panel>
+                <Stack>
+                    <Group>
+                        <ActionIcon
+                            size="xs"
+                            onClick={handleGetProjectInstance}
                         >
-                            <Stack gap={0}>
-                                <Text
-                                    fz={'.75rem'}
-                                    c="dimmed"
-                                >
-                                    Expected {service.expectedContainerState}
-                                </Text>
-                                <Text>
-                                    {service.actualContainerState} as of {new Date(service.lastUpdated).toLocaleString()}
-                                </Text>
-                            </Stack>
-                            <Text>{service.collectContainerLogs ? 'Collecting logs' : 'Not collecting logs'}</Text>
-                            <Code block>{service.containerLogs}</Code>
-                        </Fieldset>
-                    );
-                })}
-            </Stack>
-            <Accordion.Item value={props.header.id}>
-                <Accordion.Control>
-                    <Group justify="space-between">
-                        <Text>({props.header.state})</Text>
+                            <MdOutlineRefresh />
+                        </ActionIcon>
                     </Group>
-                </Accordion.Control>
-                <Accordion.Panel>
-                    <Code block>{instance?.deploymentLog.replace('\r\n', '\n')}</Code>
-                </Accordion.Panel>
-            </Accordion.Item>
-        </Stack>
+                    <Stack>
+                        <Text>Services</Text>
+                        {instance?.services.map((service) => {
+                            return (
+                                <Fieldset
+                                    legend={service.serviceName}
+                                    key={service.serviceName}
+                                    style={{
+                                        width: '100%',
+                                    }}
+                                >
+                                    <Alert
+                                        color={service.actualContainerState === service.expectedContainerState ? 'green' : 'red'}
+                                        title={service.actualContainerState === service.expectedContainerState ? 'Service Healthy' : 'Service Unhealthy'}
+                                    >
+                                        <Stack gap={0}>
+                                            <Text
+                                                fz={'.75rem'}
+                                                c="dimmed"
+                                            >
+                                                Expected {service.expectedContainerState}
+                                            </Text>
+                                            <Text>
+                                                {service.actualContainerState} as of {new Date(service.lastUpdated).toLocaleString()}
+                                            </Text>
+                                        </Stack>
+                                    </Alert>
+                                    <ConsoleLog
+                                        title="Container Log"
+                                        log={service.containerLogs}
+                                    />
+                                </Fieldset>
+                            );
+                        })}
+                    </Stack>
+                    <ConsoleLog
+                        title="Deployment Log"
+                        log={instance?.deploymentLog}
+                    />
+                </Stack>
+            </Accordion.Panel>
+        </Accordion.Item>
     );
 };
 
