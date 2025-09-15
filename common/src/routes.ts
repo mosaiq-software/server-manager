@@ -19,6 +19,7 @@ export enum API_ROUTES {
     POST_RESET_DEPLOYMENT_KEY = '/project/:projectId/reset-key',
     POST_UPDATE_ENV_VAR = '/project/:projectId/updateEnvVar',
     POST_SYNC_TO_REPO = '/project/:projectId/sync-to-repo',
+    POST_TEARDOWN_PROJECT = '/project/:projectId/teardown',
     POST_DEPLOYMENT_LOG_UPDATE = '/deploy/update',
     POST_CREATE_WORKER_NODE = '/worker-nodes/create',
     POST_UPDATE_WORKER_NODE = '/worker-nodes/:workerId/update',
@@ -43,6 +44,7 @@ export interface API_PARAMS {
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: { projectId: string };
     [API_ROUTES.POST_UPDATE_ENV_VAR]: { projectId: string };
     [API_ROUTES.POST_SYNC_TO_REPO]: { projectId: string };
+    [API_ROUTES.POST_TEARDOWN_PROJECT]: { projectId: string };
     [API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE]: {};
     [API_ROUTES.POST_CREATE_WORKER_NODE]: {};
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: { workerId: string };
@@ -68,6 +70,7 @@ export interface API_BODY {
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: {};
     [API_ROUTES.POST_UPDATE_ENV_VAR]: Secret;
     [API_ROUTES.POST_SYNC_TO_REPO]: {};
+    [API_ROUTES.POST_TEARDOWN_PROJECT]: {};
     [API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE]: DeploymentLogUpdate;
     [API_ROUTES.POST_CREATE_WORKER_NODE]: { workerId: string; address: string; port: number };
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: Partial<WorkerNode>;
@@ -92,6 +95,7 @@ export interface API_RETURN {
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: string | undefined;
     [API_ROUTES.POST_UPDATE_ENV_VAR]: undefined;
     [API_ROUTES.POST_SYNC_TO_REPO]: Project | undefined;
+    [API_ROUTES.POST_TEARDOWN_PROJECT]: undefined;
     [API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE]: undefined;
     [API_ROUTES.POST_CREATE_WORKER_NODE]: WorkerNode | undefined;
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: undefined;
@@ -118,6 +122,7 @@ export interface API_AUTH {
     [API_ROUTES.POST_RESET_DEPLOYMENT_KEY]: string;
     [API_ROUTES.POST_UPDATE_ENV_VAR]: string;
     [API_ROUTES.POST_SYNC_TO_REPO]: string;
+    [API_ROUTES.POST_TEARDOWN_PROJECT]: string;
     [API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE]: string;
     [API_ROUTES.POST_CREATE_WORKER_NODE]: string;
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: string;

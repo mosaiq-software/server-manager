@@ -7,11 +7,11 @@ import { getProject, syncProjectToRepoData } from './projectController';
 import { workerNodePost } from '@/utils/workerAPI';
 import { stringifyDynamicVariablePath } from '@mosaiq/nsm-common/secretUtil';
 import { buildNginxConfigForProject } from '@/utils/nginxUtils';
-import { appendToDeploymentLog, createProjectInstanceModel, updateProjectInstanceModel } from '@/persistence/projectInstancePersistence';
+import { appendToDeploymentLog, createProjectInstanceModel, getProjectInstancesByProjectIdModel, updateProjectInstanceModel } from '@/persistence/projectInstancePersistence';
 import { DockerCompose } from '@mosaiq/nsm-common/dockerComposeTypes';
 import { createServiceInstanceModel } from '@/persistence/serviceInstancePersistence';
-import { startNewProjectInstance } from './projectInstanceController';
 import { buildDockerComposeString } from '@/utils/repositoryUtils';
+import { getProjectInstance } from './projectInstanceController';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 export const NSM_LABEL_PREFIX = 'dev.mosaiq.nsm';
@@ -23,7 +23,20 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         let project = await getProject(projectId);
         if (!project) throw new Error('Project not found');
 
-        instanceId = await startNewProjectInstance(projectId, project.workerNodeId!);
+        await teardownProject(projectId);
+
+        instanceId = crypto.randomUUID();
+        const projectInstanceHeader: ProjectInstanceHeader = {
+            id: instanceId,
+            projectId: projectId,
+            workerNodeId: project.workerNodeId || 'unassigned',
+            state: DeploymentState.DEPLOYING,
+            created: Date.now(),
+            lastUpdated: Date.now(),
+            active: true,
+            directories: {},
+        };
+        await createProjectInstanceModel(projectInstanceHeader);
 
         if (project.state === DeploymentState.DEPLOYING) {
             throw new Error('Project is already deploying');
@@ -61,6 +74,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         const requestedPorts = await requestPortsForProject(project);
         const ensuredDirs = await getDirectoryMapForProject(project);
+        await updateProjectInstanceModel(instanceId, { directories: ensuredDirs });
 
         const dotenv = await getDotenvForProject(project, requestedPorts, ensuredDirs);
         const { conf: nginxConf, domains: nginxDomains } = getNginxConf(project, requestedPorts, ensuredDirs, workerNode.address);
@@ -106,11 +120,8 @@ export const deployProject = async (projectId: string): Promise<string | undefin
 
         const composeString = buildDockerComposeString(compose);
 
-        const cleanupCommand = `docker compose -p ${project.id} down && docker system prune -af`;
-        const runCommand = `docker compose -p ${project.id} up --build -d`;
         const deployable: DeployableProject = {
             projectId: project.id,
-            runCommand: `(${cleanupCommand} && ${runCommand})`,
             repoName: project.repoName,
             repoOwner: project.repoOwner,
             repoBranch: project.repoBranch,
@@ -244,4 +255,35 @@ const compareProjects = (projA: Project, projB: Project): boolean => {
     if (servicesA !== servicesB) return false;
 
     return projA.repoOwner === projB.repoOwner && projA.repoName === projB.repoName && projA.repoBranch === projB.repoBranch && projA.hasDockerCompose === projB.hasDockerCompose && projA.hasDotenv === projB.hasDotenv;
+};
+
+export const teardownProject = async (projectId: string): Promise<void> => {
+    try {
+        const project = await getProjectByIdModel(projectId);
+        if (!project) throw new Error('Project not found');
+        const projectInstances = await getProjectInstancesByProjectIdModel(projectId);
+        for (const instanceHeader of projectInstances) {
+            if (!instanceHeader.active) {
+                continue;
+            }
+            try {
+                const instance = await getProjectInstance(instanceHeader.id);
+                if (!instance) {
+                    console.error(`Instance ${instanceHeader.id} not found, skipping teardown`);
+                    continue;
+                }
+                await updateProjectInstanceModel(instance.id, { state: DeploymentState.DESTROYING, active: false });
+                const workerNode = await getWorkerNodeById(instance.workerNodeId);
+                if (!workerNode) {
+                    throw new Error('Worker node not found for instance');
+                }
+                await workerNodePost(workerNode.workerId, WORKER_ROUTES.POST_TEARDOWN_PROJECT, instance);
+            } catch (e: any) {
+                console.error(`Error tearing down instance ${instanceHeader.id}:`, e);
+            }
+        }
+    } catch (error: any) {
+        console.error('Error tearing down project:', error);
+        throw error;
+    }
 };

@@ -1,4 +1,4 @@
-import { DeployableControlPlaneConfig, DeployableProject, FullDirectoryMap, DockerContainerData, RelativeDirectoryMap } from './types';
+import { DeployableControlPlaneConfig, DeployableProject, FullDirectoryMap, DockerContainerData, RelativeDirectoryMap, ProjectInstance } from './types';
 
 // ===== ROUTES =====
 export enum WORKER_ROUTES {
@@ -9,6 +9,7 @@ export enum WORKER_ROUTES {
     POST_HANDLE_CONFIGS = '/handleConfigs',
     POST_LIST_CONTAINERS = '/containers',
     POST_GET_CONTAINER_LOGS = '/containerLogs',
+    POST_TEARDOWN_PROJECT = '/teardown',
 }
 export interface WORKER_BODY {
     //POST
@@ -18,6 +19,7 @@ export interface WORKER_BODY {
     [WORKER_ROUTES.POST_HANDLE_CONFIGS]: DeployableControlPlaneConfig;
     [WORKER_ROUTES.POST_LIST_CONTAINERS]: undefined;
     [WORKER_ROUTES.POST_GET_CONTAINER_LOGS]: { containerId: string };
+    [WORKER_ROUTES.POST_TEARDOWN_PROJECT]: ProjectInstance;
 }
 export interface WORKER_RESPONSE {
     //POST
@@ -27,4 +29,5 @@ export interface WORKER_RESPONSE {
     [WORKER_ROUTES.POST_HANDLE_CONFIGS]: undefined;
     [WORKER_ROUTES.POST_LIST_CONTAINERS]: { containers: DockerContainerData[] };
     [WORKER_ROUTES.POST_GET_CONTAINER_LOGS]: { logs: string | null };
+    [WORKER_ROUTES.POST_TEARDOWN_PROJECT]: undefined;
 }

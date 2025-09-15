@@ -308,17 +308,6 @@ const ProjectDeployPage = () => {
                             />
                         )
                 )}
-                <ProjectInstanceItem
-                    header={{
-                        id: 'dummy_id_2',
-                        projectId: 'dummy_project_id',
-                        workerNodeId: 'dummy_worker_node_id',
-                        state: DeploymentState.FAILED,
-                        created: Date.now() - 1000000,
-                        lastUpdated: Date.now() - 500000,
-                        active: false,
-                    }}
-                />
             </Accordion>
         </Stack>
     );
@@ -340,30 +329,6 @@ const ProjectInstanceItem = (props: ProjectInstanceItemProps) => {
         } catch (error) {
             setInstance(null);
         }
-        // setInstance({
-        //     id: 'dummy id',
-        //     projectId: 'dummy projectId',
-        //     workerNodeId: 'dummy workerNodeId',
-        //     state: DeploymentState.DEPLOYED,
-        //     created: Date.now(),
-        //     lastUpdated: Date.now(),
-        //     active: false,
-        //     deploymentLog: 'Dummy log\nLine 2 of dummy log\nLine 3 of dummy log',
-        //     services: [
-        //         {
-        //             serviceName: 'dummy_service',
-        //             expectedContainerState: DockerStatus.RUNNING,
-        //             collectContainerLogs: true,
-        //             instanceId: 'dummy_instance_id',
-        //             projectInstanceId: 'dummy_project_instance_id',
-        //             containerId: 'dummy_container_id',
-        //             actualContainerState: DockerStatus.RUNNING,
-        //             containerLogs: 'Dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log\nLine 2 of dummy container log',
-        //             created: Date.now(),
-        //             lastUpdated: Date.now(),
-        //         },
-        //     ],
-        // });
     };
 
     const date = new Date(instance?.created ?? props.header.created).toLocaleString();

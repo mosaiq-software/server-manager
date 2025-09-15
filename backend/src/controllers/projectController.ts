@@ -18,6 +18,7 @@ export const getProject = async (projectId: string) => {
         created: inst.created,
         lastUpdated: inst.lastUpdated,
         active: inst.active,
+        directories: inst.directories,
     }));
     const project: Project = {
         id: projectData.id,

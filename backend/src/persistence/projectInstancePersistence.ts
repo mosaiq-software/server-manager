@@ -22,19 +22,39 @@ ProjectInstanceModel.init(
         lastUpdated: DataTypes.NUMBER,
         deploymentLog: DataTypes.TEXT,
         active: DataTypes.BOOLEAN,
+        directoriesJson: DataTypes.TEXT,
     },
     { sequelize, timestamps: false }
 );
 
 export const getAllActiveProjectInstancesModel = async (): Promise<ProjectInstanceModelType[]> => {
-    return (await ProjectInstanceModel.findAll({ where: { active: true } }))?.map((sec) => sec.toJSON()) as ProjectInstanceModelType[];
+    const instances = (await ProjectInstanceModel.findAll({ where: { active: true } }))?.map((sec) => sec.toJSON());
+    return instances.map((instance) => {
+        const directories = JSON.parse(instance.directoriesJson || '{}') as ProjectInstance['directories'];
+        if (instance?.directoriesJson) {
+            delete instance.directoriesJson;
+        }
+        return { ...instance, directories } as ProjectInstanceModelType;
+    });
 };
 export const getProjectInstancesByProjectIdModel = async (projectId: string): Promise<ProjectInstanceModelType[]> => {
-    return (await ProjectInstanceModel.findAll({ where: { projectId } }))?.map((sec) => sec.toJSON()) as ProjectInstanceModelType[];
+    const instances = (await ProjectInstanceModel.findAll({ where: { projectId } }))?.map((sec) => sec.toJSON());
+    return instances.map((instance) => {
+        const directories = JSON.parse(instance.directoriesJson || '{}') as ProjectInstance['directories'];
+        if (instance?.directoriesJson) {
+            delete instance.directoriesJson;
+        }
+        return { ...instance, directories } as ProjectInstanceModelType;
+    });
 };
 
 export const getProjectInstanceByIdModel = async (id: string): Promise<ProjectInstanceModelType | null> => {
-    return (await ProjectInstanceModel.findByPk(id))?.toJSON() as ProjectInstanceModelType;
+    const instance = (await ProjectInstanceModel.findByPk(id))?.toJSON();
+    const directories = JSON.parse(instance?.directoriesJson || '{}') as ProjectInstance['directories'];
+    if (instance?.directoriesJson) {
+        delete instance.directoriesJson;
+    }
+    return (instance ? { ...instance, directories } : null) as ProjectInstanceModelType | null;
 };
 
 export const createProjectInstanceModel = async (projectInstanceData: ProjectInstanceHeader): Promise<void> => {

@@ -1,5 +1,5 @@
 import { createProject, deleteProject, getAllProjects, getProject, resetDeploymentKey, syncProjectToRepoData, updateProject, verifyDeploymentKey } from '@/controllers/projectController';
-import { deployProject, updateDeploymentLog } from '@/controllers/deployController';
+import { deployProject, teardownProject, updateDeploymentLog } from '@/controllers/deployController';
 import { API_BODY, API_PARAMS, API_RETURN, API_ROUTES } from '@mosaiq/nsm-common/routes';
 import express from 'express';
 import { DeploymentState } from '@mosaiq/nsm-common/types';
@@ -132,8 +132,8 @@ router.get(API_ROUTES.GET_WORKER_NODES, async (req, res) => {
 
 router.get(API_ROUTES.GET_WORKER_STATUSES, async (req, res) => {
     try {
-        const workerStatuses = await logContainerStatusesForAllWorkers();
-        const response: API_RETURN[API_ROUTES.GET_WORKER_STATUSES] = workerStatuses;
+        await logContainerStatusesForAllWorkers();
+        const response: API_RETURN[API_ROUTES.GET_WORKER_STATUSES] = undefined;
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error getting worker statuses', e);
@@ -249,6 +249,22 @@ router.post(API_ROUTES.POST_SYNC_TO_REPO, async (req, res) => {
         res.status(200).json(response);
     } catch (e: any) {
         console.error('Error syncing project to repo data', e);
+        res.status(500).send();
+    }
+});
+
+router.post(API_ROUTES.POST_TEARDOWN_PROJECT, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_TEARDOWN_PROJECT];
+    try {
+        if (!params.projectId) {
+            res.status(400).send('No projectId');
+            return;
+        }
+        await teardownProject(params.projectId);
+        const response: API_RETURN[API_ROUTES.POST_TEARDOWN_PROJECT] = undefined;
+        res.status(200).json(response);
+    } catch (e: any) {
+        console.error('Error tearing down project', e);
         res.status(500).send();
     }
 });

@@ -5,7 +5,6 @@ import { ControlPlaneStatus, DockerContainerData, DockerStatus, WorkerNode, Work
 import { workerNodePost } from '@/utils/workerAPI';
 import { WORKER_ROUTES } from '@mosaiq/nsm-common/workerRoutes';
 import { createStatusModel, getStatusByServiceInstanceIdModel, StatusModelType } from '@/persistence/serviceStatusPersistence';
-import { getAllActiveProjectInstancesModel } from '@/persistence/projectInstancePersistence';
 import { getAllActiveServices } from './projectInstanceController';
 import { NSM_LABEL_SERVICE_INSTANCE_ID } from './deployController';
 import { getServiceInstanceByIdModel, updateServiceInstanceModel } from '@/persistence/serviceInstancePersistence';

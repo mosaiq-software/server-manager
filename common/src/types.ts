@@ -38,6 +38,7 @@ export interface ProjectInstanceHeader {
     created: number;
     lastUpdated: number;
     active: boolean;
+    directories: FullDirectoryMap;
 }
 export interface ProjectInstance extends ProjectInstanceHeader {
     deploymentLog: string;
@@ -55,7 +56,6 @@ export enum DeploymentState {
 
 export interface DeployableProject {
     projectId: string;
-    runCommand: string;
     repoOwner: string;
     repoName: string;
     repoBranch: string | undefined;
