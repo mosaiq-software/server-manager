@@ -79,6 +79,7 @@ const AllowedEntitiesPage = () => {
                     color="yellow"
                     title="Unsaved Changes"
                 >
+                    <Text>Any removals will logout all users!</Text>
                     <Group>
                         <Button
                             variant="outline"

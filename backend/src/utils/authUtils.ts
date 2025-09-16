@@ -107,6 +107,5 @@ export const revokeGithubAuth = async (access_token: string) => {
         }
     } catch (error: any) {
         console.error('Error revoking GitHub token:', error);
-        throw new Error('Unable to revoke access token');
     }
 };

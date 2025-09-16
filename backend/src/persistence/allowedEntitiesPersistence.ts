@@ -16,8 +16,8 @@ export const createAllowedEntityModel = async (entity: AllowedGithubEntity): Pro
     await AllowedEntitiesModel.create({ ...entity });
 };
 
-export const deleteAllAllowedEntitiesModel = async (): Promise<void> => {
-    await AllowedEntitiesModel.destroy({ where: {} });
+export const deleteAllowedEntitiesModel = async (id: string): Promise<void> => {
+    await AllowedEntitiesModel.destroy({ where: { id } });
 };
 
 export const getAllowedUsersModel = async (): Promise<AllowedGithubEntity[]> => {

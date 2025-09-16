@@ -35,3 +35,8 @@ export const updateUserModel = async (user: Partial<User> & { githubId: string }
     if (!existingUser) throw new Error('User not found');
     await existingUser.update({ ...user });
 };
+
+export const getAllSignedInUsersModel = async (): Promise<User[]> => {
+    const users = await UserModel.findAll({ where: { signedIn: true } });
+    return users.map((u) => u.toJSON() as User);
+};

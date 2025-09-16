@@ -1,5 +1,5 @@
 import { getAllowedOrganizationsModel, getAllowedUsersModel } from '@/persistence/allowedEntitiesPersistence';
-import { createUserModel, getUserByAuthTokenModel, updateUserModel } from '@/persistence/userPersistence';
+import { createUserModel, getAllSignedInUsersModel, getUserByAuthTokenModel, updateUserModel } from '@/persistence/userPersistence';
 import { getOrgsForUser, getPrivateGitHubUserData, revokeGithubAuth } from '@/utils/authUtils';
 import { User } from '@mosaiq/nsm-common/types';
 
@@ -62,5 +62,17 @@ export const signOutUser = async (authToken: string): Promise<void> => {
     } catch (e: any) {
         console.error('Failed to sign out user:', e);
         throw new Error('Failed to sign out user: ' + e.message);
+    }
+};
+
+export const signOutAllUsers = async (): Promise<void> => {
+    try {
+        const users = await getAllSignedInUsersModel();
+        for (const user of users) {
+            await signOutUser(user.authToken);
+        }
+    } catch (e: any) {
+        console.error('Failed to sign out all users:', e);
+        throw new Error('Failed to sign out all users: ' + e.message);
     }
 };
