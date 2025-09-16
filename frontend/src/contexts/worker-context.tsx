@@ -1,8 +1,9 @@
-import { apiGet, apiPost } from '@/utils/api';
+import { useAPI } from '@/utils/api';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { Project, WorkerNode } from '@mosaiq/nsm-common/types';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useUser } from './user-context';
 
 type WorkerContextType = {
     workers: WorkerNode[];
@@ -16,12 +17,13 @@ type WorkerContextType = {
 const WorkerContext = createContext<WorkerContextType | undefined>(undefined);
 
 const WorkerProvider: React.FC<any> = ({ children }) => {
+    const api = useAPI();
     const [workers, setWorkers] = useState<WorkerNode[]>([]);
 
     useEffect(() => {
         const fetchWorkers = async () => {
             try {
-                const response = await apiGet(API_ROUTES.GET_WORKER_NODES, {}, 'AUTH TOKEN...');
+                const response = await api.get(API_ROUTES.GET_WORKER_NODES, {});
                 if (!response) {
                     return;
                 }
@@ -35,11 +37,11 @@ const WorkerProvider: React.FC<any> = ({ children }) => {
             }
         };
         fetchWorkers();
-    }, []);
+    }, [api.token]);
 
     const handleCreateWorker = async (newWorker: WorkerNode) => {
         try {
-            const createdWorker = await apiPost(API_ROUTES.POST_CREATE_WORKER_NODE, {}, newWorker, 'AUTH TOKEN...');
+            const createdWorker = await api.post(API_ROUTES.POST_CREATE_WORKER_NODE, {}, newWorker);
             if (!createdWorker) {
                 throw new Error('Creation failed');
             }
@@ -61,7 +63,7 @@ const WorkerProvider: React.FC<any> = ({ children }) => {
     const handleUpdateWorker = async (id: string, updatedWorker: Partial<WorkerNode>, clientOnly?: boolean) => {
         try {
             if (!clientOnly) {
-                await apiPost(API_ROUTES.POST_UPDATE_WORKER_NODE, { workerId: id }, updatedWorker, 'AUTH TOKEN...');
+                await api.post(API_ROUTES.POST_UPDATE_WORKER_NODE, { workerId: id }, updatedWorker);
             }
             setWorkers((prev) => prev.map((worker) => (worker.workerId === id ? { ...worker, ...updatedWorker } : worker)));
             notifications.show({
@@ -80,7 +82,7 @@ const WorkerProvider: React.FC<any> = ({ children }) => {
 
     const handleDeleteWorker = async (id: string) => {
         try {
-            await apiPost(API_ROUTES.POST_DELETE_WORKER_NODE, { workerId: id }, {}, 'AUTH TOKEN...');
+            await api.post(API_ROUTES.POST_DELETE_WORKER_NODE, { workerId: id }, {});
             setWorkers((prev) => prev.filter((worker) => worker.workerId !== id));
             notifications.show({
                 title: 'Success',
@@ -98,7 +100,7 @@ const WorkerProvider: React.FC<any> = ({ children }) => {
 
     const handleRegenWorkerKey = async (id: string) => {
         try {
-            const newKey = await apiPost(API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY, { workerId: id }, {}, 'AUTH TOKEN...');
+            const newKey = await api.post(API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY, { workerId: id }, {});
             if (!newKey) {
                 throw new Error('Key regeneration failed');
             }

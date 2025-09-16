@@ -1,11 +1,7 @@
-import { Button, Center, Group, Loader, Stack, Text, TextInput, Title } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { DeploymentState, Project } from '@mosaiq/nsm-common/types';
+import { Center, Loader, Stack, Title } from '@mantine/core';
+import { Project } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { apiGet, apiPost } from '@/utils/api';
-import {EditableTextInput} from "@/components/EditableTextInput";
+import { useNavigate, useParams } from 'react-router-dom';
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
 
@@ -41,7 +37,10 @@ const ProjectLogsPage = () => {
 
     return (
         <Stack>
-            <ProjectHeader project={project} section='Logs'/>
+            <ProjectHeader
+                project={project}
+                section="Logs"
+            />
         </Stack>
     );
 };

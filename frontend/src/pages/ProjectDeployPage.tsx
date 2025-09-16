@@ -1,19 +1,18 @@
 import { Accordion, ActionIcon, Box, Button, Center, CopyButton, Divider, Flex, Group, Loader, Modal, PasswordInput, Stack, Text, TextInput, Title, Code, Tooltip, Alert, Fieldset } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
-import { DeploymentState, DockerStatus, Project, ProjectInstance, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
+import { DeploymentState, Project, ProjectInstance, ProjectInstanceHeader } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { apiGet, apiPost } from '@/utils/api';
-import { EditableTextInput } from '@/components/EditableTextInput';
 import { useProjects } from '@/contexts/project-context';
 import { ProjectHeader } from '@/components/ProjectHeader';
-import { MdOutlineCheckBox, MdOutlineDelete, MdOutlineFileCopy, MdOutlineInsertLink, MdOutlineKey, MdOutlineLaunch, MdOutlineRefresh, MdOutlineRocket, MdOutlineRocketLaunch } from 'react-icons/md';
-import { useThrottledCallback } from '@mantine/hooks';
+import { MdOutlineCheckBox, MdOutlineDelete, MdOutlineInsertLink, MdOutlineKey, MdOutlineRefresh, MdOutlineRocketLaunch } from 'react-icons/md';
 import { useWorkers } from '@/contexts/worker-context';
 import { ConsoleLog } from '@/components/ConsoleLog';
+import { useAPI } from '@/utils/api';
 
 const ProjectDeployPage = () => {
+    const api = useAPI();
     const params = useParams();
     const projectId = params.projectId;
     const navigate = useNavigate();
@@ -33,7 +32,7 @@ const ProjectDeployPage = () => {
     useEffect(() => {
         const intervalId = setInterval(async () => {
             if (currentProjectInstanceId) {
-                const instance = await apiGet(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: currentProjectInstanceId }, 'AUTH TOKEN...');
+                const instance = await api.get(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: currentProjectInstanceId });
                 if (!instance) return;
                 setCurrentProjectInstance({ ...instance });
                 if (instance?.state !== DeploymentState.DEPLOYING) {
@@ -65,7 +64,7 @@ const ProjectDeployPage = () => {
     const handleDeploy = async () => {
         if (!project) return;
         notifications.show({ message: 'Deploying project...', color: 'blue' });
-        const newLogId = await apiGet(API_ROUTES.GET_DEPLOY_WEB, { projectId: project.id, key: project.deploymentKey ?? '' }, undefined);
+        const newLogId = await api.get(API_ROUTES.GET_DEPLOY_WEB, { projectId: project.id, key: project.deploymentKey ?? '' });
         if (!newLogId) {
             notifications.show({ message: 'Failed to get deployment log ID. Reload to see log', color: 'yellow' });
         } else {
@@ -78,7 +77,7 @@ const ProjectDeployPage = () => {
     const handleResetDeployKey = async () => {
         if (!project) return;
         notifications.show({ message: 'Resetting deployment key...', color: 'blue' });
-        const newKey = await apiPost(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, { projectId: project.id }, {}, 'AUTH TOKEN...');
+        const newKey = await api.post(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, { projectId: project.id }, {});
         if (!newKey) {
             notifications.show({ message: 'Failed to reset deployment key!', color: 'red' });
             return;
@@ -317,11 +316,12 @@ interface ProjectInstanceItemProps {
     header: ProjectInstanceHeader;
 }
 const ProjectInstanceItem = (props: ProjectInstanceItemProps) => {
+    const api = useAPI();
     const [instance, setInstance] = useState<ProjectInstance | null>(null);
 
     const handleGetProjectInstance = async () => {
         try {
-            const instance = await apiGet(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: props.header.id }, 'AUTH TOKEN...');
+            const instance = await api.get(API_ROUTES.GET_PROJECT_INSTANCE, { projectInstanceId: props.header.id });
             if (!instance?.deploymentLog) {
                 return;
             }

@@ -1,14 +1,13 @@
-import { ActionIcon, Code, Group, Stack, Text, Title } from '@mantine/core';
-import { ControlPlaneStatus, Project } from '@mosaiq/nsm-common/types';
+import { Code, Group, Stack, Text, Title } from '@mantine/core';
+import { ControlPlaneStatus } from '@mosaiq/nsm-common/types';
 import React, { useEffect, useState } from 'react';
-import { MdOutlineLaunch } from 'react-icons/md';
-import { Link } from 'react-router';
 import { Heatmap } from '@mantine/charts';
-import { apiGet } from '@/utils/api';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
+import { useAPI } from '@/utils/api';
 
 interface ControlPlaneStatusPageProps {}
 const ControlPlaneStatusPage = (props: ControlPlaneStatusPageProps) => {
+    const api = useAPI();
     const [logs, setLogs] = useState<string>('');
     const [lastHeartbeat, setLastHeartbeat] = useState<number>(0);
     const [status, setStatus] = useState<string>('Unknown');
@@ -16,7 +15,7 @@ const ControlPlaneStatusPage = (props: ControlPlaneStatusPageProps) => {
 
     const getData = async () => {
         try {
-            const res = await apiGet(API_ROUTES.GET_CONTROL_PLANE_STATUS, {}, 'AUTH TOKEN...');
+            const res = await api.get(API_ROUTES.GET_CONTROL_PLANE_STATUS, {});
             if (!res) {
                 setStatus('Unavailable');
                 return;

@@ -1,11 +1,78 @@
-import React, { createContext, useContext, useState } from 'react';
+import { User } from '@mosaiq/nsm-common/types';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { getGithubLoginUrl } from '@/utils/auth';
+import { API_ROUTES } from '@mosaiq/nsm-common/routes';
+import { rawApiPostNoHook } from '@/utils/api';
 
-type UserContextType = {};
+type UserContextType = {
+    user: User | null;
+    signIn: () => void;
+    signOut: () => void;
+    startSession: (token: string) => Promise<void>;
+};
+
+const LOCAL_STORAGE_TOKEN_KEY = 'nsm-github-token';
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const UserProvider: React.FC<any> = ({ children }) => {
-    return <UserContext.Provider value={{}}>{children}</UserContext.Provider>;
+    const [user, setUser] = useState<User | null>(null);
+
+    const tryAutoSignIn = async () => {
+        const storedToken = localStorage.getItem(LOCAL_STORAGE_TOKEN_KEY);
+        if (storedToken) {
+            await startSession(storedToken);
+            return true;
+        }
+        return false;
+    };
+
+    const signIn = async () => {
+        if (await tryAutoSignIn()) return;
+        const loginUrl = getGithubLoginUrl();
+        window.location.href = loginUrl;
+    };
+
+    const signOut = async () => {
+        setUser(null);
+        const storedToken = localStorage.getItem(LOCAL_STORAGE_TOKEN_KEY);
+        if (!storedToken) return;
+        try {
+            await rawApiPostNoHook(API_ROUTES.POST_GITHUB_LOGOUT, { token: storedToken }, {}, storedToken);
+            localStorage.removeItem(LOCAL_STORAGE_TOKEN_KEY);
+        } catch (error) {
+            console.error('Failed to sign out:', error);
+        }
+    };
+
+    const startSession = async (token: string) => {
+        try {
+            localStorage.setItem(LOCAL_STORAGE_TOKEN_KEY, token);
+            const res = await rawApiPostNoHook(API_ROUTES.POST_GITHUB_LOGIN, { token }, {}, token);
+            if (res) {
+                setUser(res);
+            }
+        } catch (error) {
+            console.error('Failed to start session:', error);
+        }
+    };
+
+    useEffect(() => {
+        tryAutoSignIn();
+    }, []);
+
+    return (
+        <UserContext.Provider
+            value={{
+                user,
+                signIn,
+                signOut,
+                startSession,
+            }}
+        >
+            {children}
+        </UserContext.Provider>
+    );
 };
 
 const useUser = () => {

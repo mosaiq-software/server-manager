@@ -1,8 +1,9 @@
-import { apiGet, apiPost } from '@/utils/api';
+import { useAPI } from '@/utils/api';
 import { notifications } from '@mantine/notifications';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 import { Project, Secret } from '@mosaiq/nsm-common/types';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useUser } from './user-context';
 
 type ProjectContextType = {
     projects: Project[];
@@ -17,11 +18,12 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 const ProjectProvider: React.FC<any> = ({ children }) => {
     const [projects, setProjects] = useState<Project[]>([]);
+    const api = useAPI();
 
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const response = await apiGet(API_ROUTES.GET_PROJECTS, {}, 'AUTH TOKEN...');
+                const response = await api.get(API_ROUTES.GET_PROJECTS, {});
                 if (!response) {
                     return;
                 }
@@ -35,11 +37,11 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
             }
         };
         fetchProjects();
-    }, []);
+    }, [api.token]);
 
     const handleCreateProject = async (newProject: Project) => {
         try {
-            const created = await apiPost(API_ROUTES.POST_CREATE_PROJECT, {}, newProject, 'AUTH TOKEN...');
+            const created = await api.post(API_ROUTES.POST_CREATE_PROJECT, {}, newProject);
             if (!created) {
                 throw new Error('Creation failed');
             }
@@ -60,14 +62,14 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
 
     const handleUpdateProject = async (id: string, updatedProject: Partial<Project>, clientOnly?: boolean) => {
         if (!clientOnly) {
-            await apiPost(API_ROUTES.POST_UPDATE_PROJECT, { projectId: id }, updatedProject, 'AUTH TOKEN...');
+            await api.post(API_ROUTES.POST_UPDATE_PROJECT, { projectId: id }, updatedProject);
         }
         setProjects((prev) => prev.map((proj) => (proj.id === id ? { ...proj, dirtyConfig: true, ...updatedProject } : proj)));
     };
 
     const updateSecrets = async (projectId: string, secrets: Secret[]) => {
         for (const secret of secrets) {
-            await apiPost(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId }, secret, 'AUTH TOKEN...');
+            await api.post(API_ROUTES.POST_UPDATE_ENV_VAR, { projectId }, secret);
             setProjects((prev) =>
                 prev.map((proj) =>
                     proj.id === projectId
@@ -87,7 +89,7 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
 
     const syncProjectToRepo = async (projectId: string) => {
         try {
-            const updatedProject = await apiPost(API_ROUTES.POST_SYNC_TO_REPO, { projectId }, {}, 'AUTH TOKEN...');
+            const updatedProject = await api.post(API_ROUTES.POST_SYNC_TO_REPO, { projectId }, {});
             if (!updatedProject) {
                 throw new Error('Sync failed');
             }
@@ -108,7 +110,7 @@ const ProjectProvider: React.FC<any> = ({ children }) => {
 
     const handleDeleteProject = async (id: string) => {
         try {
-            await apiPost(API_ROUTES.POST_DELETE_PROJECT, { projectId: id }, 'AUTH TOKEN...');
+            await api.post(API_ROUTES.POST_DELETE_PROJECT, { projectId: id }, {});
             setProjects((prev) => prev.filter((proj) => proj.id !== id));
             notifications.show({
                 title: 'Success',

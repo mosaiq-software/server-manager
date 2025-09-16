@@ -229,3 +229,20 @@ export interface ControlPlaneIncident {
     from: number;
     to: number;
 }
+
+export interface User {
+    name: string;
+    githubId: string;
+    avatarUrl: string;
+    authToken: string;
+    created: number;
+}
+
+export enum AllowedEntityType {
+    USER = 'user',
+    ORGANIZATION = 'organization',
+}
+export interface AllowedGithubEntity {
+    id: string;
+    type: AllowedEntityType;
+}

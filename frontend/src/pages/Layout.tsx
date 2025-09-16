@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useDisclosure } from '@mantine/hooks';
-import { AppShell, Avatar, Burger, Button, Center, Divider, Group, Loader, Modal, Space, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
+import { AppShell, Avatar, Burger, Button, Center, Divider, Group, Loader, Menu, Modal, Space, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
 import RouterLink from '@/components/RouterLink';
 import { useProjects } from '@/contexts/project-context';
 import { Link, useNavigate } from 'react-router';
 import { Project } from '@mosaiq/nsm-common/types';
+import { useUser } from '@/contexts/user-context';
 
 const Layout = (props: { children: React.ReactNode }) => {
     const [opened, { toggle }] = useDisclosure();
     const projectCtx = useProjects();
+    const userCtx = useUser();
     const navigate = useNavigate();
     const [modal, setModal] = useState<'create' | null>(null);
     const [creatingProject, setCreatingProject] = useState(false);
@@ -110,7 +112,15 @@ const Layout = (props: { children: React.ReactNode }) => {
                     collapsed: { mobile: !opened },
                 }}
             >
-                <AppShell.Header>
+                <AppShell.Header
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'nowrap',
+                    }}
+                    px="1rem"
+                >
                     <Burger
                         opened={opened}
                         onClick={toggle}
@@ -121,13 +131,37 @@ const Layout = (props: { children: React.ReactNode }) => {
                     <Group
                         h="100%"
                         align="center"
-                        px="1rem"
                     >
                         <Avatar src="/assets/MosaiqLogo.png" />
                         <Text>
                             <span style={{ fontWeight: '900' }}>N</span>ode <span style={{ fontWeight: '900' }}>S</span>erver <span style={{ fontWeight: '900' }}>M</span>anager
                         </Text>
                     </Group>
+                    <Menu>
+                        <Menu.Target>
+                            <Avatar
+                                src={userCtx.user?.avatarUrl || undefined}
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => {
+                                    if (!userCtx.user) {
+                                        userCtx.signIn();
+                                    }
+                                }}
+                            />
+                        </Menu.Target>
+                        {userCtx.user && (
+                            <Menu.Dropdown>
+                                <Menu.Item
+                                    component="a"
+                                    onClick={() => {
+                                        userCtx.signOut();
+                                    }}
+                                >
+                                    Logout
+                                </Menu.Item>
+                            </Menu.Dropdown>
+                        )}
+                    </Menu>
                 </AppShell.Header>
 
                 <AppShell.Navbar p="md">

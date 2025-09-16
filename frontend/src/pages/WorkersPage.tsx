@@ -1,10 +1,9 @@
 import { Alert, Button, ButtonGroup, Center, Code, Group, Loader, Modal, NumberInput, PasswordInput, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import React, { useEffect, useState } from 'react';
-import { EditableTextInput } from '@/components/EditableTextInput';
 import { useWorkers } from '@/contexts/worker-context';
 import { WorkerNode } from '@mosaiq/nsm-common/types';
-import { apiGet } from '@/utils/api';
+import { useAPI } from '@/utils/api';
 import { API_ROUTES } from '@mosaiq/nsm-common/routes';
 
 const WorkersPage = () => {
@@ -242,6 +241,7 @@ const WorkersPage = () => {
 };
 
 const WorkerStatus = (props: { worker: WorkerNode }) => {
+    const api = useAPI();
     const [ping, setPing] = useState<number | null>(null);
     const [status, setStatus] = useState<string | null>(null);
     const [icon, setIcon] = useState<string>('⚫');
@@ -249,7 +249,7 @@ const WorkerStatus = (props: { worker: WorkerNode }) => {
     useEffect(() => {
         const checkPing = async () => {
             try {
-                const ping = await apiGet(API_ROUTES.GET_WORKER_NODE_HEALTHCHECK, { workerId: props.worker.workerId }, 'AUTH TOKEN...');
+                const ping = await api.get(API_ROUTES.GET_WORKER_STATUSES, { workerId: props.worker.workerId });
                 if (ping === undefined) {
                     setStatus('CP Unreachable');
                     setPing(null);

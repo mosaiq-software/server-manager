@@ -1,4 +1,4 @@
-import { ControlPlaneStatus, DeploymentLogUpdate, DeploymentState, Project, ProjectInstance, Secret, WorkerNode } from './types';
+import { ControlPlaneStatus, DeploymentLogUpdate, DeploymentState, Project, ProjectInstance, Secret, User, WorkerNode } from './types';
 
 // ===== ROUTES =====
 export enum API_ROUTES {
@@ -25,6 +25,8 @@ export enum API_ROUTES {
     POST_UPDATE_WORKER_NODE = '/worker-nodes/:workerId/update',
     POST_DELETE_WORKER_NODE = '/worker-nodes/:workerId/delete',
     POST_REGENERATE_WORKER_NODE_KEY = '/worker-nodes/:workerId/regenerate-key',
+    POST_GITHUB_LOGIN = '/login/github/:token',
+    POST_GITHUB_LOGOUT = '/logout/github/:token',
 }
 export interface API_PARAMS {
     //GET
@@ -50,6 +52,8 @@ export interface API_PARAMS {
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: { workerId: string };
     [API_ROUTES.POST_DELETE_WORKER_NODE]: { workerId: string };
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: { workerId: string };
+    [API_ROUTES.POST_GITHUB_LOGIN]: { token: string };
+    [API_ROUTES.POST_GITHUB_LOGOUT]: { token: string };
 }
 export interface API_BODY {
     // Only POST
@@ -76,6 +80,8 @@ export interface API_BODY {
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: Partial<WorkerNode>;
     [API_ROUTES.POST_DELETE_WORKER_NODE]: {};
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: {};
+    [API_ROUTES.POST_GITHUB_LOGIN]: {};
+    [API_ROUTES.POST_GITHUB_LOGOUT]: {};
 }
 export interface API_RETURN {
     //GET
@@ -101,6 +107,8 @@ export interface API_RETURN {
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: undefined;
     [API_ROUTES.POST_DELETE_WORKER_NODE]: undefined;
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: string | undefined;
+    [API_ROUTES.POST_GITHUB_LOGIN]: User | undefined;
+    [API_ROUTES.POST_GITHUB_LOGOUT]: undefined;
 }
 
 export interface API_AUTH {
@@ -128,4 +136,6 @@ export interface API_AUTH {
     [API_ROUTES.POST_UPDATE_WORKER_NODE]: string;
     [API_ROUTES.POST_DELETE_WORKER_NODE]: string;
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: string;
+    [API_ROUTES.POST_GITHUB_LOGIN]: undefined;
+    [API_ROUTES.POST_GITHUB_LOGOUT]: string;
 }

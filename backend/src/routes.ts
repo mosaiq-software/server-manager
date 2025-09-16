@@ -8,10 +8,26 @@ import { createWorkerNode, deleteWorkerNode, getAllWorkerNodes, regenerateWorker
 import { getProjectInstanceByIdModel } from './persistence/projectInstancePersistence';
 import { getProjectInstance } from './controllers/projectInstanceController';
 import { getControlPlaneStatus, logContainerStatusesForAllWorkers } from './controllers/statusController';
+import { getGithubAuthTokenFromTempCode } from './utils/authUtils';
+import { signInUser, signOutUser, verifyAuthToken } from './controllers/userController';
 
-const router = express.Router();
+const publicRouter = express.Router();
+const privateRouter = express.Router();
 
-router.get('/', async (req, res) => {
+privateRouter.use(async (req, res, next) => {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    if (!authHeader?.length || typeof authHeader !== 'string') {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+    if (!verifyAuthToken(authHeader)) {
+        res.status(403).send('Forbidden');
+        return;
+    }
+    next();
+});
+
+publicRouter.get('/', async (req, res) => {
     try {
         res.status(200).send('Hello from the NSM API');
     } catch (error) {
@@ -20,7 +36,26 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
+publicRouter.get('/auth/github', async (req, res) => {
+    try {
+        const code = req.query.code;
+        if (!code || typeof code !== 'string') {
+            res.status(400).send('No code provided');
+            return;
+        }
+        const token = await getGithubAuthTokenFromTempCode(code);
+        if (!token) {
+            res.status(401).send('Unauthorized');
+            return;
+        }
+        res.status(302).redirect(`${process.env.FRONTEND_URL}?token=${token}`);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send();
+    }
+});
+
+publicRouter.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.GET_DEPLOY];
     try {
         if (!params.projectId) {
@@ -44,7 +79,7 @@ router.get(API_ROUTES.GET_DEPLOY, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_DEPLOY_WEB, async (req, res) => {
+privateRouter.get(API_ROUTES.GET_DEPLOY_WEB, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.GET_DEPLOY_WEB];
     try {
         if (!params.projectId) {
@@ -68,7 +103,7 @@ router.get(API_ROUTES.GET_DEPLOY_WEB, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_PROJECT, async (req, res) => {
+privateRouter.get(API_ROUTES.GET_PROJECT, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.GET_PROJECT];
     try {
         if (!params.projectId) {
@@ -88,7 +123,7 @@ router.get(API_ROUTES.GET_PROJECT, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
+privateRouter.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
     try {
         const projects = await getAllProjects();
         const response: API_RETURN[API_ROUTES.GET_PROJECTS] = projects;
@@ -99,7 +134,7 @@ router.get(API_ROUTES.GET_PROJECTS, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_PROJECT_INSTANCE, async (req, res) => {
+privateRouter.get(API_ROUTES.GET_PROJECT_INSTANCE, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.GET_PROJECT_INSTANCE];
     try {
         if (!params.projectInstanceId) {
@@ -119,7 +154,7 @@ router.get(API_ROUTES.GET_PROJECT_INSTANCE, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_WORKER_NODES, async (req, res) => {
+privateRouter.get(API_ROUTES.GET_WORKER_NODES, async (req, res) => {
     try {
         const workerNodes = await getAllWorkerNodes();
         const response: API_RETURN[API_ROUTES.GET_WORKER_NODES] = workerNodes;
@@ -130,7 +165,7 @@ router.get(API_ROUTES.GET_WORKER_NODES, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_WORKER_STATUSES, async (req, res) => {
+privateRouter.get(API_ROUTES.GET_WORKER_STATUSES, async (req, res) => {
     try {
         await logContainerStatusesForAllWorkers();
         const response: API_RETURN[API_ROUTES.GET_WORKER_STATUSES] = undefined;
@@ -141,7 +176,7 @@ router.get(API_ROUTES.GET_WORKER_STATUSES, async (req, res) => {
     }
 });
 
-router.get(API_ROUTES.GET_CONTROL_PLANE_STATUS, async (req, res) => {
+privateRouter.get(API_ROUTES.GET_CONTROL_PLANE_STATUS, async (req, res) => {
     try {
         const controlPlaneStatus = await getControlPlaneStatus();
         const response: API_RETURN[API_ROUTES.GET_CONTROL_PLANE_STATUS] = controlPlaneStatus;
@@ -152,7 +187,7 @@ router.get(API_ROUTES.GET_CONTROL_PLANE_STATUS, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_PROJECT];
     try {
         if (!body || !body.id || !body.repoOwner || !body.repoName) {
@@ -168,7 +203,7 @@ router.post(API_ROUTES.POST_CREATE_PROJECT, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_UPDATE_PROJECT, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_UPDATE_PROJECT, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_PROJECT];
     const params = req.params as API_PARAMS[API_ROUTES.POST_UPDATE_PROJECT];
     try {
@@ -185,7 +220,7 @@ router.post(API_ROUTES.POST_UPDATE_PROJECT, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_DELETE_PROJECT, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_DELETE_PROJECT, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_DELETE_PROJECT];
     try {
         if (!params.projectId) {
@@ -201,7 +236,7 @@ router.post(API_ROUTES.POST_DELETE_PROJECT, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_RESET_DEPLOYMENT_KEY];
     try {
         const newKey = await resetDeploymentKey(params.projectId);
@@ -217,7 +252,7 @@ router.post(API_ROUTES.POST_RESET_DEPLOYMENT_KEY, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_UPDATE_ENV_VAR, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_UPDATE_ENV_VAR, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_UPDATE_ENV_VAR];
     const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_ENV_VAR];
     try {
@@ -233,7 +268,7 @@ router.post(API_ROUTES.POST_UPDATE_ENV_VAR, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_SYNC_TO_REPO, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_SYNC_TO_REPO, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_SYNC_TO_REPO];
     try {
         if (!params.projectId) {
@@ -253,7 +288,7 @@ router.post(API_ROUTES.POST_SYNC_TO_REPO, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_TEARDOWN_PROJECT, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_TEARDOWN_PROJECT, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_TEARDOWN_PROJECT];
     try {
         if (!params.projectId) {
@@ -269,7 +304,7 @@ router.post(API_ROUTES.POST_TEARDOWN_PROJECT, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE];
     try {
         if (!body || !body.logId || !body.status) {
@@ -285,7 +320,7 @@ router.post(API_ROUTES.POST_DEPLOYMENT_LOG_UPDATE, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_CREATE_WORKER_NODE, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_CREATE_WORKER_NODE, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_CREATE_WORKER_NODE];
     try {
         if (!body || !body.workerId || !body.address) {
@@ -301,7 +336,7 @@ router.post(API_ROUTES.POST_CREATE_WORKER_NODE, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_UPDATE_WORKER_NODE, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_UPDATE_WORKER_NODE, async (req, res) => {
     const body = req.body as API_BODY[API_ROUTES.POST_UPDATE_WORKER_NODE];
     const params = req.params as API_PARAMS[API_ROUTES.POST_UPDATE_WORKER_NODE];
     try {
@@ -318,7 +353,7 @@ router.post(API_ROUTES.POST_UPDATE_WORKER_NODE, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_DELETE_WORKER_NODE, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_DELETE_WORKER_NODE, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_DELETE_WORKER_NODE];
     try {
         if (!params.workerId) {
@@ -334,7 +369,7 @@ router.post(API_ROUTES.POST_DELETE_WORKER_NODE, async (req, res) => {
     }
 });
 
-router.post(API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY, async (req, res) => {
+privateRouter.post(API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY, async (req, res) => {
     const params = req.params as API_PARAMS[API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY];
     try {
         if (!params.workerId) {
@@ -350,4 +385,38 @@ router.post(API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY, async (req, res) => {
     }
 });
 
-export default router;
+publicRouter.post(API_ROUTES.POST_GITHUB_LOGIN, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_GITHUB_LOGIN];
+    try {
+        if (!params.token) {
+            res.status(400).send('No token');
+            return;
+        }
+        const user = await signInUser(params.token);
+        if (!user) {
+            res.status(401).send('Unauthorized');
+            return;
+        }
+        res.status(200).json(user);
+    } catch (e: any) {
+        console.error('Error with GitHub login', e);
+        res.status(500).send();
+    }
+});
+
+privateRouter.post(API_ROUTES.POST_GITHUB_LOGOUT, async (req, res) => {
+    const params = req.params as API_PARAMS[API_ROUTES.POST_GITHUB_LOGOUT];
+    try {
+        if (!params.token) {
+            res.status(400).send('No token');
+            return;
+        }
+        await signOutUser(params.token);
+        res.status(200).send('Logged out');
+    } catch (e: any) {
+        console.error('Error with GitHub logout', e);
+        res.status(500).send();
+    }
+});
+
+export { privateRouter, publicRouter };
