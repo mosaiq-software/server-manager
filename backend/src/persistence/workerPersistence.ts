@@ -26,6 +26,10 @@ export const getWorkerNodeByIdModel = async (workerId: string): Promise<WorkerNo
     return (await WorkerNodeModel.findByPk(workerId))?.toJSON() as WorkerNode | null;
 };
 
+export const getControlPlaneWorkerNodeModel = async (): Promise<WorkerNode | null> => {
+    return (await WorkerNodeModel.findOne({ where: { isControlPlaneWorker: true } }))?.toJSON() as WorkerNode | null;
+}
+
 export const createWorkerNodeModel = async (wn: WorkerNode) => {
     return await WorkerNodeModel.create({ ...wn });
 };
