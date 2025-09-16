@@ -6,10 +6,28 @@ import ProjectConfigPage from '@/pages/ProjectConfigPage';
 import ProjectLogsPage from '@/pages/ProjectLogsPage';
 import WorkersPage from '@/pages/WorkersPage';
 import ControlPlaneStatusPage from '@/pages/ControlPlaneStatusPage';
+import LandingPage from '@/pages/LandingPage';
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { useUser } from './contexts/user-context';
 
 const Router = () => {
+    const userCtx = useUser();
+    if (!userCtx.user) {
+        return (
+            <Routes>
+                <Route
+                    path="/"
+                    element={<LandingPage />}
+                />
+                <Route
+                    path="/*"
+                    element={<p>404</p>}
+                />
+            </Routes>
+        );
+    }
+
     return (
         <Layout>
             <Routes>

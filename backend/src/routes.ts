@@ -38,7 +38,11 @@ publicRouter.get('/', async (req, res) => {
 
 publicRouter.get('/auth/github', async (req, res) => {
     try {
-        const code = req.query.code;
+        const { code, error, error_description, error_uri } = req.query;
+        if (error) {
+            res.status(302).redirect(`${process.env.FRONTEND_URL}?error=${error}&error_description=${error_description}&error_uri=${error_uri}`);
+            return;
+        }
         if (!code || typeof code !== 'string') {
             res.status(400).send('No code provided');
             return;
