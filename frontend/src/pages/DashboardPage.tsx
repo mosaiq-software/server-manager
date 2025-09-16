@@ -18,10 +18,17 @@ const DashboardPage = () => {
     }, [token]);
 
     return (
-        <Container>
-            <Title>NSM</Title>
-            <Stack></Stack>
-        </Container>
+        <Stack>
+            <Group>
+                <Title order={2}>NSM Dashboard</Title>
+            </Group>
+            <Text
+                size="lg"
+                c="dimmed"
+            >
+                AA{' '}
+            </Text>
+        </Stack>
     );
 };
 

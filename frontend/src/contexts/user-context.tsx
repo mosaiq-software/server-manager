@@ -40,6 +40,7 @@ const UserProvider: React.FC<any> = ({ children }) => {
         try {
             await rawApiPostNoHook(API_ROUTES.POST_GITHUB_LOGOUT, { token: storedToken }, {}, storedToken);
             localStorage.removeItem(LOCAL_STORAGE_TOKEN_KEY);
+            window.location.href = '/';
         } catch (error) {
             console.error('Failed to sign out:', error);
         }
@@ -51,6 +52,10 @@ const UserProvider: React.FC<any> = ({ children }) => {
             const res = await rawApiPostNoHook(API_ROUTES.POST_GITHUB_LOGIN, { token }, {}, token);
             if (res) {
                 setUser(res);
+            } else {
+                rawApiPostNoHook(API_ROUTES.POST_GITHUB_LOGOUT, { token }, {}, token);
+                setUser(null);
+                localStorage.removeItem(LOCAL_STORAGE_TOKEN_KEY);
             }
         } catch (error) {
             console.error('Failed to start session:', error);

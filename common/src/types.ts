@@ -236,6 +236,7 @@ export interface User {
     avatarUrl: string;
     authToken: string;
     created: number;
+    signedIn: boolean;
 }
 
 export enum AllowedEntityType {
@@ -245,4 +246,5 @@ export enum AllowedEntityType {
 export interface AllowedGithubEntity {
     id: string;
     type: AllowedEntityType;
+    avatarUrl: string;
 }

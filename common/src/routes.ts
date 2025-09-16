@@ -1,4 +1,4 @@
-import { ControlPlaneStatus, DeploymentLogUpdate, DeploymentState, Project, ProjectInstance, Secret, User, WorkerNode } from './types';
+import { AllowedGithubEntity, ControlPlaneStatus, DeploymentLogUpdate, DeploymentState, Project, ProjectInstance, Secret, User, WorkerNode } from './types';
 
 // ===== ROUTES =====
 export enum API_ROUTES {
@@ -11,6 +11,7 @@ export enum API_ROUTES {
     GET_WORKER_NODES = '/worker-nodes',
     GET_WORKER_STATUSES = '/worker-nodes/status',
     GET_CONTROL_PLANE_STATUS = '/control-plane/status',
+    GET_ALLOWED_ENTITIES = '/allowed-entities',
 
     //POST
     POST_CREATE_PROJECT = '/project/create',
@@ -27,6 +28,7 @@ export enum API_ROUTES {
     POST_REGENERATE_WORKER_NODE_KEY = '/worker-nodes/:workerId/regenerate-key',
     POST_GITHUB_LOGIN = '/login/github/:token',
     POST_GITHUB_LOGOUT = '/logout/github/:token',
+    POST_SET_ALLOWED_ENTITIES = '/allowed-entities/set',
 }
 export interface API_PARAMS {
     //GET
@@ -38,6 +40,7 @@ export interface API_PARAMS {
     [API_ROUTES.GET_WORKER_NODES]: {};
     [API_ROUTES.GET_WORKER_STATUSES]: {};
     [API_ROUTES.GET_CONTROL_PLANE_STATUS]: {};
+    [API_ROUTES.GET_ALLOWED_ENTITIES]: {};
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: {};
@@ -54,6 +57,7 @@ export interface API_PARAMS {
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: { workerId: string };
     [API_ROUTES.POST_GITHUB_LOGIN]: { token: string };
     [API_ROUTES.POST_GITHUB_LOGOUT]: { token: string };
+    [API_ROUTES.POST_SET_ALLOWED_ENTITIES]: {};
 }
 export interface API_BODY {
     // Only POST
@@ -66,6 +70,7 @@ export interface API_BODY {
     [API_ROUTES.GET_WORKER_NODES]: undefined;
     [API_ROUTES.GET_WORKER_STATUSES]: undefined;
     [API_ROUTES.GET_CONTROL_PLANE_STATUS]: undefined;
+    [API_ROUTES.GET_ALLOWED_ENTITIES]: undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
@@ -82,6 +87,7 @@ export interface API_BODY {
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: {};
     [API_ROUTES.POST_GITHUB_LOGIN]: {};
     [API_ROUTES.POST_GITHUB_LOGOUT]: {};
+    [API_ROUTES.POST_SET_ALLOWED_ENTITIES]: { entities: AllowedGithubEntity[] };
 }
 export interface API_RETURN {
     //GET
@@ -93,6 +99,7 @@ export interface API_RETURN {
     [API_ROUTES.GET_WORKER_NODES]: WorkerNode[] | undefined;
     [API_ROUTES.GET_WORKER_STATUSES]: undefined; //TODO
     [API_ROUTES.GET_CONTROL_PLANE_STATUS]: ControlPlaneStatus | undefined;
+    [API_ROUTES.GET_ALLOWED_ENTITIES]: AllowedGithubEntity[] | undefined;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: Project;
@@ -109,6 +116,7 @@ export interface API_RETURN {
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: string | undefined;
     [API_ROUTES.POST_GITHUB_LOGIN]: User | undefined;
     [API_ROUTES.POST_GITHUB_LOGOUT]: undefined;
+    [API_ROUTES.POST_SET_ALLOWED_ENTITIES]: undefined;
 }
 
 export interface API_AUTH {
@@ -122,6 +130,7 @@ export interface API_AUTH {
     [API_ROUTES.GET_WORKER_NODES]: string;
     [API_ROUTES.GET_WORKER_STATUSES]: string;
     [API_ROUTES.GET_CONTROL_PLANE_STATUS]: string;
+    [API_ROUTES.GET_ALLOWED_ENTITIES]: string;
 
     //POST
     [API_ROUTES.POST_CREATE_PROJECT]: string;
@@ -138,4 +147,5 @@ export interface API_AUTH {
     [API_ROUTES.POST_REGENERATE_WORKER_NODE_KEY]: string;
     [API_ROUTES.POST_GITHUB_LOGIN]: undefined;
     [API_ROUTES.POST_GITHUB_LOGOUT]: string;
+    [API_ROUTES.POST_SET_ALLOWED_ENTITIES]: string;
 }

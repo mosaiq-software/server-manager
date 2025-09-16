@@ -10,6 +10,7 @@ import { getProjectInstance } from './controllers/projectInstanceController';
 import { getControlPlaneStatus, logContainerStatusesForAllWorkers } from './controllers/statusController';
 import { getGithubAuthTokenFromTempCode } from './utils/authUtils';
 import { signInUser, signOutUser, verifyAuthToken } from './controllers/userController';
+import { getAllowedEntities, setAllowedEntities } from './controllers/allowedEntityController';
 
 const publicRouter = express.Router();
 const privateRouter = express.Router();
@@ -188,6 +189,17 @@ privateRouter.get(API_ROUTES.GET_CONTROL_PLANE_STATUS, async (req, res) => {
     } catch (e: any) {
         console.error('Error getting control plane status', e);
         res.status(500).send();
+    }
+});
+
+privateRouter.get(API_ROUTES.GET_ALLOWED_ENTITIES, async (req, res) => {
+    try {
+        const entities = await getAllowedEntities();
+        const response: API_RETURN[API_ROUTES.GET_ALLOWED_ENTITIES] = entities;
+        res.status(200).json(response);
+    } catch (error) {
+        console.error('Error getting allowed entities', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
@@ -420,6 +432,21 @@ privateRouter.post(API_ROUTES.POST_GITHUB_LOGOUT, async (req, res) => {
     } catch (e: any) {
         console.error('Error with GitHub logout', e);
         res.status(500).send();
+    }
+});
+
+privateRouter.post(API_ROUTES.POST_SET_ALLOWED_ENTITIES, async (req, res) => {
+    const body = req.body as API_BODY[API_ROUTES.POST_SET_ALLOWED_ENTITIES];
+    try {
+        if (!body || !body.entities) {
+            res.status(400).send('Invalid request body');
+            return;
+        }
+        await setAllowedEntities(body.entities);
+        res.status(200).send('Allowed entities set');
+    } catch (error) {
+        console.error('Error setting allowed entities', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 

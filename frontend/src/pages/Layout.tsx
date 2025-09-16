@@ -179,6 +179,11 @@ const Layout = (props: { children: React.ReactNode }) => {
                         to="/control-plane"
                         label="Control Plane"
                     />
+                    <RouterLink
+                        to="/allowed-entities"
+                        label="Allowed Entities"
+                    />
+                    <Space h="md" />
                     <Divider
                         w="80%"
                         mx="auto"

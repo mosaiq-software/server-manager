@@ -55,15 +55,15 @@ const ControlPlaneStatusPage = (props: ControlPlaneStatusPageProps) => {
 
     return (
         <Stack>
-            <Text
-                size="lg"
-                color="dimmed"
-            >
-                Last Heartbeat: {lastHeartbeat ? new Date(lastHeartbeat).toLocaleString() : 'Never'}
-            </Text>
             <Group>
                 <Title order={2}>Control Plane Status: {status}</Title>
             </Group>
+            <Text
+                size="lg"
+                c="dimmed"
+            >
+                Last Heartbeat: {lastHeartbeat ? new Date(lastHeartbeat).toLocaleString() : 'Never'}
+            </Text>
             <Heatmap
                 startDate={new Date(new Date().setDate(new Date().getDate() - 90)).toLocaleDateString()}
                 endDate={new Date().toLocaleDateString()}

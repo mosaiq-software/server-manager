@@ -7,6 +7,7 @@ import ProjectLogsPage from '@/pages/ProjectLogsPage';
 import WorkersPage from '@/pages/WorkersPage';
 import ControlPlaneStatusPage from '@/pages/ControlPlaneStatusPage';
 import LandingPage from '@/pages/LandingPage';
+import AllowedEntitiesPage from '@/pages/AllowedEntitiesPage';
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { useUser } from './contexts/user-context';
@@ -58,6 +59,10 @@ const Router = () => {
                 <Route
                     path="/control-plane"
                     element={<ControlPlaneStatusPage />}
+                />
+                <Route
+                    path="/allowed-entities"
+                    element={<AllowedEntitiesPage />}
                 />
                 <Route
                     path="/*"

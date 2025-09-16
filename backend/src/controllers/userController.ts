@@ -1,10 +1,11 @@
 import { getAllowedOrganizationsModel, getAllowedUsersModel } from '@/persistence/allowedEntitiesPersistence';
-import { createUserModel, deleteUserByAuthTokenModel, getUserByAuthTokenModel } from '@/persistence/userPersistence';
+import { createUserModel, getUserByAuthTokenModel, updateUserModel } from '@/persistence/userPersistence';
 import { getOrgsForUser, getPrivateGitHubUserData, revokeGithubAuth } from '@/utils/authUtils';
 import { User } from '@mosaiq/nsm-common/types';
 
 export const signInUser = async (authToken: string) => {
     try {
+        const existingUser = await getUserByAuthTokenModel(authToken);
         const githubUser = await getPrivateGitHubUserData(authToken);
         if (!githubUser) {
             console.error('Failed to fetch GitHub user data');
@@ -20,6 +21,10 @@ export const signInUser = async (authToken: string) => {
         const isUserAllowed = allowedUsers.some((u) => u.id.toLowerCase() === githubUser.login.toLowerCase());
         const isOrgAllowed = usersOrgs.some((org) => allowedOrgs.some((allowed) => allowed.id.toLowerCase() === org.login.toLowerCase()));
         if (!isUserAllowed && !isOrgAllowed && process.env.GITHUB_OAUTH_DEFAULT_USER?.toLocaleLowerCase() !== githubUser.login.toLowerCase()) {
+            if (existingUser) {
+                // User is no longer allowed, sign them out
+                await signOutUser(authToken);
+            }
             return null;
         }
         const user: User = {
@@ -28,11 +33,8 @@ export const signInUser = async (authToken: string) => {
             authToken,
             avatarUrl: githubUser.avatar_url || '',
             created: Date.now(),
+            signedIn: true,
         };
-        const existingUser = await getUserByAuthTokenModel(authToken);
-        if (existingUser) {
-            await deleteUserByAuthTokenModel(authToken);
-        }
         await createUserModel(user);
         return user;
     } catch (error: any) {
@@ -45,7 +47,7 @@ export const verifyAuthToken = async (token: string): Promise<boolean> => {
     try {
         const user = await getUserByAuthTokenModel(token);
         if (!user) return false;
-        return true;
+        return user.signedIn;
     } catch (error) {
         return false;
     }
@@ -53,7 +55,9 @@ export const verifyAuthToken = async (token: string): Promise<boolean> => {
 
 export const signOutUser = async (authToken: string): Promise<void> => {
     try {
-        await deleteUserByAuthTokenModel(authToken);
+        const user = await getUserByAuthTokenModel(authToken);
+        if (!user) return;
+        await updateUserModel({ githubId: user.githubId, signedIn: false });
         await revokeGithubAuth(authToken);
     } catch (e: any) {
         console.error('Failed to sign out user:', e);
