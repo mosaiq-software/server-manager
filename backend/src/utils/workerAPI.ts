@@ -12,7 +12,7 @@ export async function workerNodePost<T extends WORKER_ROUTES>(wnId: string, ep: 
             Authorization: `${wn.authToken}`,
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(60 * 1000),
+        signal: AbortSignal.timeout(10 * 60 * 1000),
     });
     const text = await res.text();
     if (!res.ok) {
