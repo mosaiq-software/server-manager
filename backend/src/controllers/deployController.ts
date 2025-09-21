@@ -12,6 +12,7 @@ import { DockerCompose } from '@mosaiq/nsm-common/dockerComposeTypes';
 import { createServiceInstanceModel } from '@/persistence/serviceInstancePersistence';
 import { buildDockerComposeString } from '@/utils/repositoryUtils';
 import { getProjectInstance } from './projectInstanceController';
+import { getControlPlaneWorkerNodeModel } from '@/persistence/workerPersistence';
 
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 export const NSM_LABEL_PREFIX = 'dev.mosaiq.nsm';
@@ -63,13 +64,9 @@ export const deployProject = async (projectId: string): Promise<string | undefin
         if (!workerNode) {
             throw new Error('Worker node not found');
         }
-        const controlPlaneWorkerNodeId = process.env.CONTROL_PLANE_WORKER_ID;
-        if (!controlPlaneWorkerNodeId) {
+        const controlPlaneWorkerNode = await getControlPlaneWorkerNodeModel();
+        if (!controlPlaneWorkerNode) {
             throw new Error('No control plane worker node assigned in env');
-        }
-        const cpWorkerNode = await getWorkerNodeById(controlPlaneWorkerNodeId);
-        if (!cpWorkerNode) {
-            throw new Error('Control plane worker node not found');
         }
 
         const requestedPorts = await requestPortsForProject(project);
@@ -139,7 +136,7 @@ export const deployProject = async (projectId: string): Promise<string | undefin
             domainsToCertify: nginxDomains,
             logId: instanceId,
         };
-        await workerNodePost(cpWorkerNode.workerId, WORKER_ROUTES.POST_HANDLE_CONFIGS, depConf);
+        await workerNodePost(controlPlaneWorkerNode.workerId, WORKER_ROUTES.POST_HANDLE_CONFIGS, depConf);
     } catch (error: any) {
         console.error('Error deploying project:', error);
         if (instanceId) {
