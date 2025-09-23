@@ -165,7 +165,8 @@ const Layout = (props: { children: React.ReactNode }) => {
                 </AppShell.Header>
 
                 <AppShell.Navbar p="md" style={{
-                    height: `calc(100dvh - var(--app-shell-header-height) - 1px)`
+                    height: `calc(100dvh - var(--app-shell-header-height) - 1px)`,
+                    overflowY: 'auto'
                 }}>
                     <RouterLink
                         to="/"
