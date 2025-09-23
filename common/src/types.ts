@@ -248,3 +248,16 @@ export interface AllowedGithubEntity {
     type: AllowedEntityType;
     avatarUrl: string;
 }
+
+export enum LogLevel {
+    ERROR = 'error',
+    WARN = 'warn',
+    INFO = 'info',
+    DEBUG = 'debug',
+}
+
+export interface LogMessage {
+    time: number;
+    lvl: LogLevel;
+    msg: string;
+}
