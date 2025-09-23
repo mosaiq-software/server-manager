@@ -164,7 +164,9 @@ const Layout = (props: { children: React.ReactNode }) => {
                     </Menu>
                 </AppShell.Header>
 
-                <AppShell.Navbar p="md">
+                <AppShell.Navbar p="md" style={{
+                    height: `calc(100dvh - var(--app-shell-header-height) - 1px)`
+                }}>
                     <RouterLink
                         to="/"
                         label="Dashboard"
@@ -217,6 +219,7 @@ const Layout = (props: { children: React.ReactNode }) => {
                     <Button
                         onClick={() => setModal('create')}
                         variant="outline"
+                        style={{flexShrink: '0'}}
                     >
                         Create Project
                     </Button>
