@@ -9,9 +9,7 @@
         "build": "webpack --mode production",
         "lint": "eslint .",
         "types": "tsc --noemit",
-        "common:prod": "npm un @mosaiq/nsm-common && npm i @mosaiq/nsm-common@latest",
-        "common:dev": "npm un @mosaiq/nsm-common && npm i ../common/dist",
-        "build:prod": "date && npm ci && npm i @mosaiq/nsm-common@latest && npm run build && rm -rf /www/* && cp -r ./public/* /www"
+        "build:prod": "date && npm run build && rm -rf /www/* && cp -r ./public/* /www"
     },
     "dependencies": {
         "@mantine/core": "^8.2.1",
@@ -20,7 +18,7 @@
         "@mantine/notifications": "^8.2.1",
         "@mantine/charts": "8.2.1",
         "@types/react-router": "^5.1.20",
-        "@mosaiq/nsm-common": "../common/dist",
+        "@mosaiq/nsm-common": "*",
         "query-string": "^9.1.1",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",

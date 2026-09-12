@@ -1,15 +1,15 @@
+# Built from the monorepo root context (see docker-compose.yml). Installs all workspaces so the
+# shared @mosaiq/nsm-common package resolves locally from source, then runs the backend with tsx.
 FROM node:20
-
-RUN apt-get update && apt-get install -y 
-
-COPY . /app
 
 WORKDIR /app
 
-RUN npm install -g tsx
+COPY . /app
 
 RUN npm ci
 
-RUN npm run common:prod
+RUN npm install -g tsx
+
+WORKDIR /app/backend
 
 CMD ["tsx", "src/index.ts"]

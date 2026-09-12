@@ -5,7 +5,9 @@
         "outDir": "./dist",
         "baseUrl": "./",
         "paths": {
-            "@/*": ["src/*/index", "src/*"]
+            "@/*": ["src/*/index", "src/*"],
+            "@mosaiq/nsm-common": ["../common/src/index.ts"],
+            "@mosaiq/nsm-common/*": ["../common/src/*"]
         },
         "strict": true,
         "esModuleInterop": true,
@@ -16,6 +18,6 @@
         "declaration": true,
         "declarationMap": true
     },
-    "include": ["src/**/*.ts", "src/routes.ts"],
+    "include": ["src/**/*.ts", "../common/src/**/*.ts"],
     "exclude": ["node_modules"]
 }

@@ -1,14 +1,9 @@
 services:
-    common-job:
-        build: ./common/
-        restart: no
-        labels:
-            dev.mosaiq.nsm.serviceInstanceId: nsm-control-plane-common
     ui-job:
-        build: ./frontend/
+        build:
+            context: .
+            dockerfile: frontend/Dockerfile
         restart: no
-        depends_on:
-            - common-job
         volumes:
             - type: bind
               source: ${NSM_WWW_PATH}
@@ -20,9 +15,9 @@ services:
         labels:
             dev.mosaiq.nsm.serviceInstanceId: nsm-control-plane-ui
     api:
-        build: ./backend/
-        depends_on:
-            - common-job
+        build:
+            context: .
+            dockerfile: backend/Dockerfile
         ports:
             - '${API_PORT}:${API_PORT}'
         restart: always

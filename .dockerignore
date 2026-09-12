@@ -1,0 +1,7 @@
+**/node_modules
+**/dist
+**/public/bundle.js
+.git
+.env
+**/*.sqlite
+**/.idea

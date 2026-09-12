@@ -1,6 +1,0 @@
-src/*
-scripts/*
-.github/*
-.gitignore
-*.tgz
-/.idea

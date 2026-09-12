@@ -24,14 +24,33 @@ module.exports = () => {
             modules: ['node_modules'],
             alias: {
                 '@': path.resolve(__dirname, 'src/'),
+                // Consume the shared common package straight from TS source (no build step),
+                // mirroring the tsconfig path aliases.
+                '@mosaiq/nsm-common': path.resolve(__dirname, '../common/src'),
             }
         },
         module: {
             rules: [
                 {
                     test: /\.(ts|tsx)$/,
-                    exclude: /node_modules/,
-                    use: 'babel-loader'
+                    include: [
+                        path.resolve(__dirname, 'src'),
+                        path.resolve(__dirname, '../common/src'),
+                    ],
+                    use: {
+                        loader: 'babel-loader',
+                        // Presets are set inline (not via .babelrc) so they also apply to the shared
+                        // common/ package, whose files live outside this package's babelrc scope.
+                        options: {
+                            babelrc: false,
+                            configFile: false,
+                            presets: [
+                                '@babel/preset-env',
+                                '@babel/preset-react',
+                                '@babel/preset-typescript',
+                            ],
+                        },
+                    },
                 },
                 {
                     test: /\.css$/i,

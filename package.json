@@ -1,24 +1,21 @@
 {
     "name": "@mosaiq/node-server-manager",
+    "private": true,
+    "workspaces": [
+        "common",
+        "backend",
+        "frontend"
+    ],
     "scripts": {
-        "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\" \"npm run build:common\"",
-        "start:backend": "cd backend && npm run start",
-        "start:frontend": "cd frontend && npm run start",
-        "build:common": "cd common && npm run build:watch",
+        "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+        "start:backend": "npm run start -w @mosaiq/nsm-backend",
+        "start:frontend": "npm run start -w @mosaiq/nsm-frontend",
+        "build:frontend": "npm run build -w @mosaiq/nsm-frontend",
         "pretty": "prettier --write \"./**/*.{ts,tsx,json}\"",
-        "lint": "npm run lint:backend && npm run lint:frontend && npm run lint:common",
-        "lint:backend": "cd backend && npm run lint",
-        "lint:frontend": "cd frontend && npm run lint",
-        "lint:common": "cd common && npm run lint",
-        "types": "npm run types:backend && npm run types:frontend && npm run types:common",
-        "types:backend": "cd backend && npm run types",
-        "types:frontend": "cd frontend && npm run types",
-        "types:common": "cd common && npm run types",
-        "common:prod": "concurrently \"cd backend && npm run common:prod\" \"cd frontend && npm run common:prod\"",
-        "common:dev": "concurrently \"cd backend && npm run common:dev\" \"cd frontend && npm run common:dev\"",
-        "postinstall": "cd common && npm i && npm run build && cd .. && concurrently \"cd backend && npm i\" \"cd frontend && npm i\"",
+        "lint": "npm run lint --workspaces --if-present",
+        "types": "npm run types --workspaces --if-present",
         "pre-deploy": "docker compose -p nsm down && docker system prune -af",
-        "deploy": "npm run pre-deploy &&docker compose -p nsm up --build -d"
+        "deploy": "npm run pre-deploy && docker compose -p nsm up --build -d"
     },
     "dependencies": {
         "concurrently": "^9.1.0"

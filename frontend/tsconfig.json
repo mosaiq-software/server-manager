@@ -4,7 +4,9 @@
         "module": "ES2022",
         "baseUrl": "./",
         "paths": {
-            "@/*": ["src/*/index", "src/*"]
+            "@/*": ["src/*/index", "src/*"],
+            "@mosaiq/nsm-common": ["../common/src/index.ts"],
+            "@mosaiq/nsm-common/*": ["../common/src/*"]
         },
         "strict": true,
         "moduleResolution": "bundler",
@@ -17,6 +19,6 @@
         "esModuleInterop": true,
         "skipLibCheck": true
     },
-    "include": ["./src/**/*"],
+    "include": ["./src/**/*", "../common/src/**/*"],
     "exclude": ["node_modules"]
 }
