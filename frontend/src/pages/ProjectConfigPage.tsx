@@ -168,6 +168,34 @@ const ProjectConfigPage = () => {
         });
     };
 
+    const handleExportConfig = () => {
+        if (!project) return;
+        const config = {
+            __nsmLegacyConfig: 1,
+            id: project.id,
+            repoOwner: project.repoOwner,
+            repoName: project.repoName,
+            repoBranch: project.repoBranch,
+            allowCICD: project.allowCICD,
+            timeout: project.timeout,
+            nginxConfig: project.nginxConfig ?? { servers: [] },
+            services: project.services ?? [],
+            secrets,
+        };
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${project.id}.nsm-config.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        notifications.show({
+            title: 'Success',
+            message: 'Project config exported successfully',
+            color: 'green',
+        });
+    };
+
     if (project === undefined) {
         return (
             <Center>
@@ -269,6 +297,17 @@ const ProjectConfigPage = () => {
                     project={project}
                     section="Configuration"
                 />
+                <Group justify="flex-end">
+                    <Tooltip label="Download the full project config for import into NSM">
+                        <Button
+                            variant="light"
+                            leftSection={<MdOutlineDownload />}
+                            onClick={handleExportConfig}
+                        >
+                            Download Config
+                        </Button>
+                    </Tooltip>
+                </Group>
                 {isSame && project.dirtyConfig && (
                     <Alert
                         variant="light"
